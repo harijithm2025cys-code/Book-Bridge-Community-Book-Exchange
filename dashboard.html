@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BookBridge — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#241a12;
+    --wood:#2e2118;
+    --wood-light:#3c2c1f;
+    --brass:#c08a2e;
+    --brass-soft:#e0b563;
+    --paper:#f3ecdd;
+    --paper-line:#e2d6bd;
+    --card:#fbf7ec;
+    --ink:#241812;
+    --ink-soft:#5c5044;
+    --moss:#4c6444;
+    --moss-soft:#e9f0e3;
+    --error:#a5432f;
+    --error-soft:#fbeae5;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; text-decoration:none; }
+  :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+
+  /* ── TOP BAR ─────────────────────────────────────────── */
+  header{
+    background:var(--wood-dark);
+    color:var(--paper);
+    padding:18px 32px;
+    display:flex;
+    align-items:center;
+    gap:24px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:0 2px 12px rgba(0,0,0,0.18);
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+  .brand .dot{ width:7px; height:7px; border-radius:50%; background:var(--brass); }
+
+  .search-wrap{
+    flex:1;
+    max-width:460px;
+    position:relative;
+  }
+  .search-wrap input{
+    width:100%;
+    background:var(--wood-light);
+    border:1px solid #4a382a;
+    color:var(--paper);
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    padding:9px 14px 9px 34px;
+    border-radius:20px;
+  }
+  .search-wrap input::placeholder{ color:#a99a82; }
+  .search-wrap svg{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; stroke:#a99a82;
+  }
+
+  .header-spacer{ flex:1; }
+
+  .btn-list{
+    background:var(--brass);
+    color:var(--wood-dark);
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    padding:9px 18px;
+    border-radius:20px;
+    border:none;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-list:hover{ background:var(--brass-soft); }
+
+  .profile-chip{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    cursor:pointer;
+    padding:4px 10px 4px 4px;
+    border-radius:20px;
+  }
+  .profile-chip:hover{ background:rgba(255,255,255,0.06); }
+  .avatar{
+    width:32px; height:32px; border-radius:50%;
+    background:var(--brass-soft);
+    color:var(--wood-dark);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces', serif; font-weight:700; font-size:13px;
+    flex-shrink:0;
+    overflow:hidden;
+  }
+  .avatar img{ width:100%; height:100%; object-fit:cover; }
+  .profile-name{ font-size:13.5px; font-weight:500; }
+  .profile-name .edit-hint{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:#a99a82;
+    margin-top:1px;
+  }
+
+  /* ── FILTER TABS ─────────────────────────────────────── */
+  .tabs{
+    max-width:1120px;
+    margin:0 auto;
+    padding:28px 32px 0;
+    display:flex;
+    gap:6px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .tab{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:10px 4px 14px;
+    margin-right:22px;
+    color:var(--ink-soft);
+    border-bottom:2px solid transparent;
+    cursor:pointer;
+    background:none; border:none;
+  }
+  .tab.active{
+    color:var(--wood-dark);
+    border-bottom-color:var(--brass);
+    font-weight:600;
+  }
+
+  main{
+    max-width:1120px;
+    margin:0 auto;
+    padding:32px;
+  }
+
+  .section-heading{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .section-sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:24px;
+  }
+
+  /* ── SIGNATURE ELEMENT: LIBRARY INDEX CARD ──────────────
+     Each listing reads like a checkout card from a physical
+     library catalog — perforated top edge, rotated stamp,
+     due-date-style meta line, dashed "call number" footer.
+  ────────────────────────────────────────────────────────── */
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:22px;
+  }
+  .book-card{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:2px;
+    padding:20px 18px 16px;
+    position:relative;
+    box-shadow:0 1px 0 var(--paper-line), 0 6px 14px rgba(36,24,18,0.05);
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .book-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 22px rgba(36,24,18,0.12);
+  }
+  .book-card::before{
+    /* perforation strip */
+    content:"";
+    position:absolute;
+    top:0; left:16px; right:16px;
+    height:1px;
+    background-image:radial-gradient(circle, var(--paper-line) 1.5px, transparent 1.6px);
+    background-size:8px 1px;
+    background-repeat:repeat-x;
+  }
+  .book-thumb{
+    width:100%;
+    height:120px;
+    border-radius:4px;
+    background:var(--paper-line);
+    margin-bottom:12px;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .book-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .book-thumb.placeholder{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  .stamp{
+    position:absolute;
+    top:14px; right:14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    font-weight:500;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:3px 8px;
+    border:1.5px solid currentColor;
+    border-radius:3px;
+    transform:rotate(6deg);
+    background:var(--card);
+  }
+  /* Stamp colors mirror the spine colors on the login page's shelf,
+     so the two pages read as one visual system. */
+  .stamp.sell{     color:var(--brass); }
+  .stamp.donate{   color:var(--moss); }
+  .stamp.lend{     color:#3c5a73; }
+  .stamp.exchange{ color:#9a4a3f; }
+
+  .book-extra{
+    font-size:12.5px;
+    color:var(--ink);
+    background:var(--moss-soft);
+    border-radius:4px;
+    padding:6px 10px;
+    margin-bottom:14px;
+  }
+  .book-extra.price{ background:#f6ecd8; color:#8a5f16; }
+  .book-extra.lend{ background:#e4ecf1; color:#2f4a5e; }
+  .book-extra.exchange{ background:#f4e6e0; color:#7a3324; }
+
+  .book-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-bottom:12px;
+  }
+  .book-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    background:var(--paper);
+    border:1px solid var(--paper-line);
+    border-radius:3px;
+    padding:2px 7px;
+  }
+
+  /* ── MODAL: List a book ─────────────────────────────────── */
+  .modal-backdrop{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(36,26,18,0.55);
+    z-index:50;
+    align-items:flex-start;
+    justify-content:center;
+    padding:60px 20px;
+    overflow-y:auto;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--paper);
+    width:100%;
+    max-width:480px;
+    border-radius:6px;
+    padding:32px 30px 28px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    position:relative;
+  }
+  .modal-close{
+    position:absolute; top:18px; right:18px;
+    background:none; border:none; cursor:pointer;
+    color:var(--ink-soft); font-size:20px; line-height:1;
+    padding:4px;
+  }
+  .modal h2{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .modal .modal-sub{
+    font-size:13px; color:var(--ink-soft); margin-bottom:22px;
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .field-group{ margin-bottom:16px; }
+  .field-group label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field-group input, .field-group textarea, .field-group select{
+    width:100%;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:5px;
+    padding:9px 11px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    color:var(--ink);
+  }
+  .field-group input:focus, .field-group textarea:focus, .field-group select:focus{
+    border-color:var(--brass);
+  }
+  .type-pills{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .type-pill{
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:18px;
+    border:1.5px solid var(--paper-line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .type-pill[data-type="sell"].active{ border-color:var(--brass); color:var(--brass); background:#f6ecd8; }
+  .type-pill[data-type="donate"].active{ border-color:var(--moss); color:var(--moss); background:var(--moss-soft); }
+  .type-pill[data-type="lend"].active{ border-color:#3c5a73; color:#3c5a73; background:#e4ecf1; }
+  .type-pill[data-type="exchange"].active{ border-color:#9a4a3f; color:#9a4a3f; background:#f4e6e0; }
+
+  .conditional-field{ display:none; }
+  .conditional-field.visible{ display:block; }
+
+  .image-upload{
+    border:1.5px dashed var(--paper-line);
+    border-radius:6px;
+    padding:14px;
+    text-align:center;
+    cursor:pointer;
+    background:#fff;
+  }
+  .image-upload:hover{ border-color:var(--brass); }
+  .image-upload input[type="file"]{ display:none; }
+  .image-upload .hint{
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .image-preview-row{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+  .image-preview{
+    width:56px; height:56px;
+    border-radius:5px;
+    overflow:hidden;
+    border:1px solid var(--paper-line);
+    position:relative;
+  }
+  .image-preview img{ width:100%; height:100%; object-fit:cover; }
+
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:22px;
+  }
+  .btn-secondary{
+    background:none;
+    border:1px solid var(--paper-line);
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:20px;
+    cursor:pointer;
+  }
+  .btn-primary{
+    background:var(--brass);
+    border:none;
+    color:var(--wood-dark);
+    font-weight:600;
+    font-size:13px;
+    padding:9px 18px;
+    border-radius:20px;
+    cursor:pointer;
+  }
+  .btn-primary:hover{ background:var(--brass-soft); }
+  .btn-primary:disabled{ opacity:0.6; cursor:default; }
+  .form-error{
+    font-size:12.5px;
+    color:var(--error);
+    background:var(--error-soft);
+    border-radius:5px;
+    padding:8px 11px;
+    margin-bottom:16px;
+    display:none;
+  }
+  .form-error.visible{ display:block; }
+
+  .book-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:16.5px;
+    line-height:1.3;
+    margin:6px 40px 4px 0;
+  }
+  .book-author{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .book-meta{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:14px;
+  }
+  .book-meta .dot-sep{ width:3px; height:3px; border-radius:50%; background:var(--paper-line); }
+
+  .book-card-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding-top:12px;
+    border-top:1px dashed var(--paper-line);
+  }
+  .call-number{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:#a99a82;
+    letter-spacing:0.03em;
+  }
+  .card-action{
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--brass);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:2px;
+  }
+  .card-action:hover{ color:var(--wood-dark); }
+
+  /* ── EMPTY STATE: BLANK CATALOG DRAWER ──────────────────── */
+  .empty-drawer{
+    border:1px dashed var(--paper-line);
+    border-radius:4px;
+    padding:48px 32px;
+    text-align:center;
+    color:var(--ink-soft);
+  }
+  .empty-drawer .drawer-icon{
+    width:44px; height:32px;
+    margin:0 auto 18px;
+    border:1.5px solid var(--paper-line);
+    border-radius:2px;
+    position:relative;
+  }
+  .empty-drawer .drawer-icon::before{
+    content:"";
+    position:absolute;
+    left:50%; top:-2px; transform:translateX(-50%);
+    width:14px; height:5px;
+    border:1.5px solid var(--paper-line);
+    border-bottom:none;
+    border-radius:2px 2px 0 0;
+  }
+  .empty-drawer h3{
+    font-family:'Fraunces', serif;
+    font-size:17px;
+    color:var(--ink);
+    margin-bottom:6px;
+    font-weight:600;
+  }
+  .empty-drawer p{ font-size:13px; margin-bottom:18px; }
+  .empty-drawer button{
+    background:var(--brass);
+    color:var(--wood-dark);
+    font-weight:600;
+    font-size:13px;
+    padding:9px 18px;
+    border-radius:20px;
+    border:none;
+    cursor:pointer;
+  }
+
+  @media (max-width:720px){
+    header{ padding:14px 18px; gap:14px; }
+    .search-wrap{ display:none; }
+    .profile-name{ display:none; }
+    main{ padding:24px 18px; }
+    .tabs{ padding:22px 18px 0; overflow-x:auto; }
+    .field-row{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="dot"></span>BookBridge</div>
+
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Search by title, author, or course code…">
+  </div>
+
+  <div class="header-spacer"></div>
+
+  <button class="btn-list" id="listBookBtn">+ List a book</button>
+
+  <div class="profile-chip" id="profileChip">
+    <div class="avatar" id="avatarEl">?</div>
+    <div class="profile-name">
+      <span id="displayNameEl">Loading…</span>
+      <span class="edit-hint">tap to rename</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="all">All Listings</button>
+  <button class="tab" data-tab="mine">My Listings</button>
+  <button class="tab" data-tab="borrowed">Borrowed</button>
+  <button class="tab" data-tab="saved">Saved</button>
+</nav>
+
+<main>
+  <div class="section-heading" id="sectionHeading">The shelf</div>
+  <div class="section-sub" id="sectionSub">Everything currently available across campus.</div>
+
+  <div class="card-grid" id="cardGrid">
+    <!-- Cards render here via renderCards() -->
+  </div>
+
+  <div class="empty-drawer" id="emptyDrawer" style="display:none;">
+    <div class="drawer-icon"></div>
+    <h3 id="emptyTitle">This drawer's empty</h3>
+    <p id="emptyBody">No one's listed a book here yet. Be the first.</p>
+    <button id="emptyListBtn">+ List a book</button>
+  </div>
+</main>
+
+<!-- ── List a book modal ─────────────────────────────────────── -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <button class="modal-close" id="modalCloseBtn" aria-label="Close">&times;</button>
+    <h2>List a book</h2>
+    <p class="modal-sub">Put a book on the shelf for other students to find.</p>
+
+    <div class="form-error" id="formError"></div>
+
+    <form id="listBookForm">
+      <div class="field-group">
+        <label for="fTitle">Title</label>
+        <input type="text" id="fTitle" placeholder="e.g. Digital Logic Design" required>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label for="fAuthor">Author</label>
+          <input type="text" id="fAuthor" placeholder="e.g. M. Morris Mano">
+        </div>
+        <div class="field-group">
+          <label for="fCourse">Course code</label>
+          <input type="text" id="fCourse" placeholder="e.g. EC204">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label for="fDept">Department</label>
+          <select id="fDept">
+            <option value="">Select…</option>
+            <option>CSE</option>
+            <option>ECE</option>
+            <option>EEE</option>
+            <option>Mech</option>
+            <option>Civil</option>
+            <option>IT</option>
+            <option>AI & DS</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="fSemester">Semester</label>
+          <select id="fSemester">
+            <option value="">Select…</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="fCondition">Condition</label>
+        <select id="fCondition">
+          <option value="">Select…</option>
+          <option>New</option>
+          <option>Good</option>
+          <option>Fair</option>
+          <option>Worn</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>What are you doing with it?</label>
+        <div class="type-pills" id="typePills">
+          <button type="button" class="type-pill active" data-type="sell">Sell</button>
+          <button type="button" class="type-pill" data-type="donate">Donate</button>
+          <button type="button" class="type-pill" data-type="lend">Lend</button>
+          <button type="button" class="type-pill" data-type="exchange">Exchange</button>
+        </div>
+      </div>
+
+      <div class="field-group conditional-field visible" data-for="sell">
+        <label for="fPrice">Price (₹)</label>
+        <input type="number" id="fPrice" min="0" step="1" placeholder="e.g. 150">
+      </div>
+
+      <div class="field-group conditional-field" data-for="lend">
+        <label for="fDuration">Lending period</label>
+        <input type="text" id="fDuration" placeholder="e.g. 2 weeks, till end of semester">
+      </div>
+
+      <div class="field-group conditional-field" data-for="exchange">
+        <label for="fWants">Looking to exchange for</label>
+        <input type="text" id="fWants" placeholder="e.g. any DBMS textbook">
+      </div>
+
+      <div class="field-group">
+        <label>Photos (up to 3)</label>
+        <label class="image-upload" id="imageUploadZone">
+          <div class="hint">Tap to add photos of the book</div>
+          <input type="file" id="fImages" accept="image/png,image/jpeg,image/webp" multiple>
+        </label>
+        <div class="image-preview-row" id="imagePreviewRow"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="modalCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary" id="submitBtn">Add to shelf</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // ── Default display name logic ────────────────────────────
+  function nameFromEmail(email){
+    const local = (email || '').split('@')[0];
+    const cleaned = local.replace(/[0-9]+$/g, '');
+    const parts = cleaned.split(/[._-]+/).filter(Boolean);
+    if(parts.length === 0) return email;
+    return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+  }
+
+  function initials(name){
+    return name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
+  }
+
+  let currentUser = null;
+
+  async function loadProfile(){
+    try{
+      const res = await fetch('/api/me');
+      if(!res.ok) throw new Error('not signed in');
+      const user = await res.json();
+
+      const displayName = user.display_name || user.name || nameFromEmail(user.email);
+      currentUser = { ...user, display_name: displayName };
+
+      document.getElementById('displayNameEl').textContent = displayName;
+      const avatarEl = document.getElementById('avatarEl');
+      if(user.picture){
+        avatarEl.innerHTML = `<img src="${user.picture}" alt="${displayName}">`;
+      } else {
+        avatarEl.textContent = initials(displayName);
+      }
+    }catch(e){
+      window.location.href = '/';
+    }
+  }
+
+  // ── Renaming (default name is editable, not fixed) ─────────
+  document.getElementById('profileChip').addEventListener('click', async () => {
+    if(!currentUser) return;
+    const next = prompt('Display name on BookBridge:', currentUser.display_name);
+    if(!next || next.trim() === '' || next === currentUser.display_name) return;
+
+    const res = await fetch('/api/update-profile', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ display_name: next.trim() })
+    });
+    if(res.ok){
+      currentUser.display_name = next.trim();
+      document.getElementById('displayNameEl').textContent = currentUser.display_name;
+      const avatarEl = document.getElementById('avatarEl');
+      if(!currentUser.picture) avatarEl.textContent = initials(currentUser.display_name);
+    }
+  });
+
+  // ── Books, now backed by the real /api/books database route ────
+  let books = [];
+  let activeTab = 'all';
+  let searchTimer = null;
+
+  async function fetchBooks(){
+    const params = new URLSearchParams();
+    if(activeTab === 'mine') params.set('scope', 'mine');
+    const q = document.getElementById('searchInput').value.trim();
+    if(q) params.set('q', q);
+
+    try{
+      const res = await fetch('/api/books?' + params.toString());
+      if(!res.ok) throw new Error('no /api/books route yet');
+      books = await res.json();
+    }catch(err){
+      books = [];
+    }
+    renderCards(books);
+  }
+
+  function extraLineFor(b){
+    if(b.listing_type === 'sell' && b.price != null){
+      return `<div class="book-extra price">₹${b.price}</div>`;
+    }
+    if(b.listing_type === 'lend' && b.lend_duration){
+      return `<div class="book-extra lend">Lend period: ${b.lend_duration}</div>`;
+    }
+    if(b.listing_type === 'exchange' && b.wants_in_exchange){
+      return `<div class="book-extra exchange">Wants: ${b.wants_in_exchange}</div>`;
+    }
+    return '';
+  }
+
+  function tagsFor(b){
+    const tags = [];
+    if(b.department) tags.push(b.department);
+    if(b.semester) tags.push('Sem ' + b.semester);
+    if(b.condition) tags.push(b.condition);
+    if(!tags.length) return '';
+    return `<div class="book-tags">${tags.map(t => `<span class="book-tag">${t}</span>`).join('')}</div>`;
+  }
+
+  function thumbFor(b){
+    if(b.images && b.images.length){
+      return `<div class="book-thumb"><img src="/uploads/${b.images[0]}" alt="${b.title}"></div>`;
+    }
+    return `<div class="book-thumb placeholder">No photo yet</div>`;
+  }
+
+  function actionLabelFor(b){
+    if(b.status === 'requested') return 'Notify me';
+    if(b.listing_type === 'sell') return 'Buy';
+    if(b.listing_type === 'donate') return 'Claim';
+    if(b.listing_type === 'lend') return 'Borrow';
+    if(b.listing_type === 'exchange') return 'Propose swap';
+    return 'Request';
+  }
+
+  function renderCards(list){
+    const grid = document.getElementById('cardGrid');
+    const empty = document.getElementById('emptyDrawer');
+    grid.innerHTML = '';
+    if(!list.length){
+      grid.style.display = 'none';
+      empty.style.display = 'block';
+      document.getElementById('emptyTitle').textContent =
+        activeTab === 'mine' ? "You haven't listed anything yet" : "This drawer's empty";
+      document.getElementById('emptyBody').textContent =
+        activeTab === 'mine' ? "List your first book to see it here." : "No one's listed a book here yet. Be the first.";
+      return;
+    }
+    grid.style.display = 'grid';
+    empty.style.display = 'none';
+
+    list.forEach((b, i) => {
+      const card = document.createElement('div');
+      card.className = 'book-card';
+      card.innerHTML = `
+        <span class="stamp ${b.listing_type}">${b.listing_type}</span>
+        ${thumbFor(b)}
+        <div class="book-title">${b.title}</div>
+        <div class="book-author">${b.author || ''}</div>
+        <div class="book-meta">${b.course || ''}<span class="dot-sep"></span>${b.owner || ''}</div>
+        ${tagsFor(b)}
+        ${extraLineFor(b)}
+        <div class="book-card-footer">
+          <span class="call-number">#BB-${String(b.id ?? i+1).padStart(3,'0')}</span>
+          <button class="card-action">${actionLabelFor(b)}</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ── Search (debounced, hits the real backend) ───────────────
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(fetchBooks, 300);
+  });
+
+  // ── Tabs ─────────────────────────────────────────────────
+  const TAB_COPY = {
+    all:      { heading:"The shelf", sub:"Everything currently available across campus." },
+    mine:     { heading:"My listings", sub:"Books you've put up for lending, exchange, or donation." },
+    borrowed: { heading:"Borrowed", sub:"Books currently checked out to you." },
+    saved:    { heading:"Saved", sub:"Listings you're keeping an eye on." },
+  };
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelector('.tab.active').classList.remove('active');
+      tab.classList.add('active');
+      activeTab = tab.dataset.tab;
+      const copy = TAB_COPY[activeTab];
+      document.getElementById('sectionHeading').textContent = copy.heading;
+      document.getElementById('sectionSub').textContent = copy.sub;
+      // Borrowed/Saved need Requests+Transactions tables (next build phase) —
+      // show an honest empty state instead of faking content until then.
+      if(activeTab === 'all' || activeTab === 'mine'){
+        fetchBooks();
+      } else {
+        renderCards([]);
+      }
+    });
+  });
+
+  // ── List a book modal ────────────────────────────────────
+  const modalBackdrop = document.getElementById('modalBackdrop');
+  const listBookForm = document.getElementById('listBookForm');
+  const formError = document.getElementById('formError');
+  const submitBtn = document.getElementById('submitBtn');
+  let selectedType = 'sell';
+  let selectedFiles = [];
+
+  function openModal(){
+    modalBackdrop.classList.add('open');
+    document.getElementById('fTitle').focus();
+  }
+  function closeModal(){
+    modalBackdrop.classList.remove('open');
+    listBookForm.reset();
+    formError.classList.remove('visible');
+    selectedFiles = [];
+    renderImagePreviews();
+    setType('sell');
+  }
+  function setType(type){
+    selectedType = type;
+    document.querySelectorAll('.type-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.type === type);
+    });
+    document.querySelectorAll('.conditional-field').forEach(f => {
+      f.classList.toggle('visible', f.dataset.for === type);
+    });
+  }
+
+  document.getElementById('listBookBtn').addEventListener('click', openModal);
+  document.getElementById('emptyListBtn').addEventListener('click', openModal);
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', (e) => {
+    if(e.target === modalBackdrop) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal();
+  });
+
+  document.getElementById('typePills').addEventListener('click', (e) => {
+    const pill = e.target.closest('.type-pill');
+    if(pill) setType(pill.dataset.type);
+  });
+
+  // ── Image picker (up to 3 photos) ────────────────────────
+  document.getElementById('fImages').addEventListener('change', (e) => {
+    const incoming = Array.from(e.target.files || []);
+    selectedFiles = [...selectedFiles, ...incoming].slice(0, 3);
+    renderImagePreviews();
+  });
+
+  function renderImagePreviews(){
+    const row = document.getElementById('imagePreviewRow');
+    row.innerHTML = '';
+    selectedFiles.forEach((file) => {
+      const url = URL.createObjectURL(file);
+      const div = document.createElement('div');
+      div.className = 'image-preview';
+      div.innerHTML = `<img src="${url}" alt="preview">`;
+      row.appendChild(div);
+    });
+  }
+
+  listBookForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formError.classList.remove('visible');
+
+    const title = document.getElementById('fTitle').value.trim();
+    if(!title){
+      formError.textContent = 'Title is required.';
+      formError.classList.add('visible');
+      return;
+    }
+    if(selectedType === 'sell'){
+      const price = document.getElementById('fPrice').value;
+      if(price === '' || Number(price) < 0){
+        formError.textContent = 'Enter a valid price, or switch to Donate if it\'s free.';
+        formError.classList.add('visible');
+        return;
+      }
+    }
+
+    const fd = new FormData();
+    fd.append('title', title);
+    fd.append('author', document.getElementById('fAuthor').value.trim());
+    fd.append('course', document.getElementById('fCourse').value.trim());
+    fd.append('department', document.getElementById('fDept').value);
+    fd.append('semester', document.getElementById('fSemester').value);
+    fd.append('condition', document.getElementById('fCondition').value);
+    fd.append('listing_type', selectedType);
+    if(selectedType === 'sell') fd.append('price', document.getElementById('fPrice').value);
+    if(selectedType === 'lend') fd.append('lend_duration', document.getElementById('fDuration').value.trim() || 'Not specified');
+    if(selectedType === 'exchange') fd.append('wants_in_exchange', document.getElementById('fWants').value.trim() || 'Open to offers');
+    selectedFiles.forEach(f => fd.append('images', f));
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding…';
+    try{
+      const res = await fetch('/api/books', { method:'POST', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){
+        formError.textContent = data.error || 'Could not add this listing. Please try again.';
+        formError.classList.add('visible');
+        return;
+      }
+      closeModal();
+      if(activeTab === 'all' || activeTab === 'mine') fetchBooks();
+    }catch(err){
+      formError.textContent = 'Could not reach the server. Please try again.';
+      formError.classList.add('visible');
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add to shelf';
+    }
+  });
+
+  loadProfile();
+  fetchBooks();
+</script>
+</body>
+</html>

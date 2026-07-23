@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BookBridge — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --wood-dark:#241a12;
+    --wood:#2e2118;
+    --wood-light:#3c2c1f;
+    --brass:#c08a2e;
+    --brass-soft:#e0b563;
+    --paper:#f3ecdd;
+    --paper-line:#e2d6bd;
+    --ink:#241812;
+    --ink-soft:#5c5044;
+    --moss:#4c6444;
+    --error:#a5432f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    display:flex;
+    background:var(--wood-dark);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .stage{
+    display:flex;
+    width:100%;
+    min-height:100vh;
+  }
+
+  /* LEFT — wood panel */
+  .panel-left{
+    flex:1.1;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(192,138,46,0.14), transparent 55%),
+      linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+    color:var(--paper);
+    padding:64px 56px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:28px;
+    letter-spacing:-0.01em;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--brass);
+    display:inline-block;
+  }
+  .tagline-block{
+    max-width:420px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--brass-soft);
+    margin-bottom:18px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:44px;
+    line-height:1.12;
+    letter-spacing:-0.01em;
+    margin-bottom:20px;
+  }
+  .sub{
+    font-size:15.5px;
+    line-height:1.6;
+    color:#d8cbb0;
+  }
+
+  /* shelf illustration */
+  .shelf{
+    display:flex;
+    align-items:flex-end;
+    gap:6px;
+    height:120px;
+    margin-top:48px;
+  }
+  .spine{
+    width:26px;
+    border-radius:3px 3px 0 0;
+    transition:transform .25s ease;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .spine:hover{ transform:translateY(-8px) rotate(-1deg); }
+  .shelf-line{
+    position:absolute;
+    left:56px; right:56px;
+    height:3px;
+    background:linear-gradient(90deg, transparent, var(--brass) 15%, var(--brass) 85%, transparent);
+    opacity:0.5;
+  }
+
+  .footnote-left{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    color:#8a7a63;
+    letter-spacing:0.02em;
+  }
+
+  /* RIGHT — paper panel */
+  .panel-right{
+    flex:1;
+    background:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+  }
+  .card{
+    width:100%;
+    max-width:380px;
+  }
+  .card-eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .card h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:28px;
+    margin-bottom:10px;
+    color:var(--ink);
+  }
+  .card p.desc{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    line-height:1.55;
+    margin-bottom:28px;
+  }
+
+  .domain-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    padding:7px 12px;
+    border-radius:20px;
+    color:var(--moss);
+    margin-bottom:28px;
+  }
+  .domain-chip svg{ width:13px; height:13px; flex-shrink:0; }
+
+  #googleBtnContainer{
+    display:flex;
+    justify-content:center;
+    margin-bottom:16px;
+    min-height:44px;
+  }
+
+  .status{
+    font-size:13.5px;
+    padding:12px 14px;
+    border-radius:8px;
+    line-height:1.5;
+    display:none;
+  }
+  .status.error{
+    display:block;
+    background:#fbeae5;
+    color:var(--error);
+    border:1px solid #f1c9bd;
+  }
+  .status.success{
+    display:block;
+    background:#eaf0e6;
+    color:var(--moss);
+    border:1px solid #cfe0c6;
+  }
+  .status.loading{
+    display:block;
+    background:#f5f0e3;
+    color:var(--ink-soft);
+    border:1px solid var(--paper-line);
+  }
+
+  .divider{
+    border:0;
+    border-top:1px solid var(--paper-line);
+    margin:28px 0 20px;
+  }
+  .fine-print{
+    font-size:12px;
+    color:#8a7a63;
+    line-height:1.6;
+  }
+
+  @media (max-width:840px){
+    .stage{ flex-direction:column; }
+    .panel-left{ padding:40px 32px; }
+    h1{ font-size:32px; }
+    .shelf{ height:70px; }
+    .panel-right{ padding:32px; }
+  }
+
+  a{ color:var(--brass); }
+  :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="panel-left">
+    <div class="brand"><span class="dot"></span>BookBridge</div>
+
+    <div class="tagline-block">
+      <div class="eyebrow">SECE Campus Exchange</div>
+      <h1>Every unused textbook<br>is someone else's semester.</h1>
+      <p class="sub">Lend, borrow, exchange, or donate study materials with students across your campus — no more paying full price for a book that's used once a year.</p>
+
+      <div class="shelf" aria-hidden="true">
+        <div class="spine" style="height:78%; background:#7a3b2e;"></div>
+        <div class="spine" style="height:95%; background:#c08a2e;"></div>
+        <div class="spine" style="height:65%; background:#4c6444;"></div>
+        <div class="spine" style="height:88%; background:#3c5a73;"></div>
+        <div class="spine" style="height:72%; background:#8a5a3c;"></div>
+        <div class="spine" style="height:100%; background:#9a4a3f;"></div>
+        <div class="spine" style="height:60%; background:#c08a2e;"></div>
+        <div class="spine" style="height:82%; background:#4c6444;"></div>
+      </div>
+    </div>
+
+    <div class="footnote-left">PS-13 &middot; Codeisnomini Hackathon</div>
+  </div>
+
+  <div class="panel-right">
+    <div class="card">
+      <div class="card-eyebrow">Sign in</div>
+      <h2>Welcome to BookBridge</h2>
+      <p class="desc">Access is limited to verified college accounts, so every listing on the shelf is from someone you actually go to class with.</p>
+
+      <div class="domain-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        Restricted to @sece.ac.in
+      </div>
+
+      <div id="googleBtnContainer"></div>
+
+      <div id="status" class="status"></div>
+
+      <hr class="divider">
+      <p class="fine-print">By continuing you agree that your name, college email, and profile photo will be visible to other verified SECE students on the platform. If your Google account isn't a <strong>@sece.ac.in</strong> address, sign-in will be blocked.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────────────
+  // 1. Create a project + OAuth Client ID (Web application) in Google Cloud Console.
+  // 2. Paste that client ID below.
+  // 3. Add your dev URL (e.g. http://localhost:3000) and prod URL to
+  //    "Authorized JavaScript origins" for that client ID.
+  const GOOGLE_CLIENT_ID = "95544806282-vqlbvh9p0a1tt8rumqkhuatgb9jksd8q.apps.googleusercontent.com";
+  const ALLOWED_DOMAIN = "sece.ac.in";
+  // Point this at your backend (see server.js) for real verification.
+  const VERIFY_ENDPOINT = "/api/auth/google"; 
+  // ────────────────────────────────────────────────────────────────────
+
+  const statusEl = document.getElementById('status');
+
+  function showStatus(kind, message){
+    statusEl.className = 'status ' + kind;
+    statusEl.textContent = message;
+  }
+
+  function decodeJwt(token){
+    try{
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
+      const json = decodeURIComponent(atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join(''));
+      return JSON.parse(json);
+    }catch(e){ return null; }
+  }
+
+  async function handleCredentialResponse(response){
+    const idToken = response.credential;
+    const payload = decodeJwt(idToken);
+
+    if(!payload){
+      showStatus('error', "Couldn't read that sign-in response. Please try again.");
+      return;
+    }
+
+    // Quick client-side check (fast feedback only — NOT the real security boundary)
+    const emailDomain = (payload.email || '').split('@')[1] || '';
+    if(emailDomain.toLowerCase() !== ALLOWED_DOMAIN){
+      showStatus('error', `Access is limited to @${ALLOWED_DOMAIN} accounts. You signed in with ${payload.email || 'an unrecognized account'}.`);
+      // Also revoke so the picker doesn't just re-suggest this account silently.
+      if(window.google) google.accounts.id.disableAutoSelect();
+      return;
+    }
+    if(!payload.email_verified){
+      showStatus('error', 'Your Google account email is not verified.');
+      return;
+    }
+
+    showStatus('loading', 'Verifying your account…');
+
+    // Send the raw ID token to the backend for real verification + session creation.
+    try{
+      const res = await fetch(VERIFY_ENDPOINT, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ credential: idToken })
+      });
+
+      if(!res.ok){
+        const err = await res.json().catch(()=>({error:'Verification failed'}));
+        showStatus('error', err.error || 'Sign-in was rejected by the server.');
+        return;
+      }
+
+      showStatus('success', `Welcome, ${payload.name || payload.email}! Redirecting…`);
+      setTimeout(() => { window.location.href = '/dashboard'; }, 900);
+
+    }catch(err){
+      // Backend not running yet (e.g. during frontend-only dev/demo).
+      showStatus('success', `Welcome, ${payload.name || payload.email}! (Demo mode — no backend connected yet.)`);
+    }
+  }
+
+  window.onload = function(){
+    if(!window.google){
+      showStatus('error', 'Google Sign-In failed to load. Check your connection and reload.');
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse,
+      hd: ALLOWED_DOMAIN // hints Google to only list this domain's accounts
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('googleBtnContainer'),
+      { theme:'outline', size:'large', shape:'pill', text:'signin_with', width:320 }
+    );
+  };
+</script>
+</body>
+</html>
