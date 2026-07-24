@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BookBridge — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#241a12;
+    --wood:#2e2118;
+    --wood-light:#3c2c1f;
+    --brass:#c08a2e;
+    --brass-soft:#e0b563;
+    --paper:#f3ecdd;
+    --paper-line:#e2d6bd;
+    --card:#fbf7ec;
+    --ink:#241812;
+    --ink-soft:#5c5044;
+    --moss:#4c6444;
+    --moss-soft:#e9f0e3;
+    --error:#a5432f;
+    --error-soft:#fbeae5;
+    --blue:#3c5a73;
+    --blue-soft:#e4ecf1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; text-decoration:none; }
+  :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+  /* ══════════════════════ TOP BAR ══════════════════════ */
+  header{
+    background:var(--wood-dark);
+    color:var(--paper);
+    padding:16px 32px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    position:sticky;
+    top:0;
+    z-index:30;
+    box-shadow:0 2px 14px rgba(0,0,0,0.2);
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:19px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .brand .dot{ width:7px; height:7px; border-radius:50%; background:var(--brass); }
+  .brand .tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--brass-soft);
+    border:1px solid var(--brass-soft);
+    padding:2px 8px;
+    border-radius:10px;
+    margin-left:4px;
+    letter-spacing:0.04em;
+  }
+  .header-spacer{ flex:1; }
+  .back-link{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:#d8cbb0;
+    padding:8px 14px;
+    border-radius:16px;
+    border:1px solid #4a382a;
+  }
+  .back-link:hover{ background:var(--wood-light); }
+  .logout-btn{
+    background:none;
+    border:1px solid #4a382a;
+    color:#d8cbb0;
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:16px;
+    cursor:pointer;
+  }
+  .logout-btn:hover{ border-color:var(--error); color:#f0b8a8; }
+
+  /* ══════════════════════ HERO ══════════════════════ */
+  .hero{
+    background:
+      radial-gradient(ellipse at 85% -20%, rgba(192,138,46,0.16), transparent 55%),
+      linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+    color:var(--paper);
+    padding:40px 32px 46px;
+  }
+  .hero-inner{
+    max-width:1160px;
+    margin:0 auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .hero-eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--brass-soft);
+    margin-bottom:10px;
+  }
+  .hero h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:32px;
+    letter-spacing:-0.01em;
+    margin-bottom:6px;
+  }
+  .hero .hero-sub{ font-size:14px; color:#c8b89c; }
+  .hero-stats{ display:flex; gap:28px; }
+  .hero-stat{ text-align:right; }
+  .hero-stat .num{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    color:var(--brass-soft);
+    line-height:1;
+  }
+  .hero-stat .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:#a99a82;
+    margin-top:5px;
+  }
+
+  /* ══════════════════ SECTION TILES (nav) ══════════════════
+     Same drawer-tile vocabulary as the student dashboard, so
+     the admin surface still reads as part of one system —
+     just with an amber "review desk" undertone instead of the
+     dashboard's mixed palette, to signal this is the oversight
+     view, not the browsing view.
+  ─────────────────────────────────────────────────────── */
+  main{ max-width:1160px; margin:0 auto; padding:0 32px 48px; }
+  .section-tiles{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:16px;
+    margin-top:-30px;
+    margin-bottom:36px;
+  }
+  .sec-tile{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:8px;
+    padding:22px 20px 18px;
+    text-align:left;
+    cursor:pointer;
+    position:relative;
+    box-shadow:0 8px 20px rgba(36,24,18,0.10);
+    transition:transform .15s ease, box-shadow .15s ease;
+    font-family:inherit;
+  }
+  .sec-tile:hover{ transform:translateY(-3px); box-shadow:0 14px 28px rgba(36,24,18,0.16); }
+  .sec-tile.active{ border-color:var(--brass); box-shadow:0 0 0 1.5px var(--brass), 0 14px 28px rgba(36,24,18,0.16); }
+  .sec-tile::before{
+    content:"";
+    position:absolute;
+    top:-6px; left:20px;
+    width:26px; height:10px;
+    background:var(--brass);
+    border-radius:0 0 4px 4px;
+    opacity:0.85;
+  }
+  .sec-icon{
+    width:34px; height:34px;
+    border-radius:7px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:14px;
+  }
+  .sec-icon svg{ width:17px; height:17px; }
+  .sec-tile[data-panel="pending"] .sec-icon{ background:#f6ecd8; color:#8a5f16; }
+  .sec-tile[data-panel="listings"] .sec-icon{ background:var(--blue-soft); color:var(--blue); }
+  .sec-tile[data-panel="students"] .sec-icon{ background:var(--moss-soft); color:var(--moss); }
+  .sec-title{ font-family:'Fraunces', serif; font-weight:600; font-size:16.5px; margin-bottom:3px; }
+  .sec-desc{ font-size:12.5px; color:var(--ink-soft); line-height:1.4; }
+  .sec-count{
+    position:absolute;
+    top:18px; right:18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:500;
+    color:var(--ink-soft);
+    background:var(--paper);
+    border:1px solid var(--paper-line);
+    border-radius:10px;
+    padding:2px 8px;
+    min-width:22px;
+    text-align:center;
+  }
+  .sec-count.alert{ color:#8a5f16; border-color:#e0c48a; background:#f6ecd8; }
+
+  /* ══════════════════ PANELS / TABLE ══════════════════ */
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .catalog-head{ margin-bottom:20px; }
+  .section-heading{ font-family:'Fraunces', serif; font-size:21px; font-weight:600; margin-bottom:4px; }
+  .section-sub{ font-size:13px; color:var(--ink-soft); }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  thead th{
+    text-align:left;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink-soft);
+    padding:12px 14px;
+    background:#efe6d1;
+    border-bottom:1px solid var(--paper-line);
+  }
+  tbody td{
+    padding:12px 14px;
+    font-size:13.5px;
+    border-bottom:1px solid var(--paper-line);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:#f7f1e2; }
+
+  .badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    padding:2px 8px;
+    border-radius:10px;
+    display:inline-block;
+  }
+  .badge.admin{ background:#f6ecd8; color:#8a5f16; }
+  .badge.verified{ background:var(--moss-soft); color:var(--moss); }
+  .badge.banned{ background:var(--error-soft); color:var(--error); }
+  .badge.pending{ background:var(--blue-soft); color:var(--blue); }
+
+  .row-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  button.action{
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:6px 12px;
+    border-radius:14px;
+    border:1.5px solid var(--paper-line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  button.action:hover{ border-color:var(--brass); color:var(--brass); }
+  button.action.danger:hover{ border-color:var(--error); color:var(--error); }
+  button.action.positive:hover{ border-color:var(--moss); color:var(--moss); }
+  button.action:disabled{ opacity:0.5; cursor:default; }
+
+  .empty-state{
+    padding:44px 32px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13.5px;
+    background:var(--card);
+    border:1px dashed var(--paper-line);
+    border-radius:8px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:24px; right:24px;
+    background:var(--wood-dark);
+    color:var(--paper);
+    padding:12px 18px;
+    border-radius:8px;
+    font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    display:none;
+    z-index:100;
+  }
+  .toast.error{ background:var(--error); }
+  .toast.show{ display:block; }
+
+  @media (max-width:900px){
+    .section-tiles{ grid-template-columns:repeat(2, 1fr); }
+  }
+  @media (max-width:720px){
+    header{ padding:14px 18px; }
+    .hero{ padding:32px 18px 40px; }
+    .hero-inner{ align-items:flex-start; }
+    main{ padding:0 18px 40px; }
+    .section-tiles{ grid-template-columns:1fr; margin-top:-24px; }
+    table, thead, tbody, th, td, tr{ display:block; }
+    thead{ display:none; }
+    tbody tr{
+      background:var(--card);
+      border:1px solid var(--paper-line);
+      border-radius:6px;
+      margin-bottom:12px;
+      padding:8px 0;
+    }
+    tbody td{ border-bottom:none; display:flex; justify-content:space-between; gap:10px; }
+    tbody td::before{
+      content:attr(data-label);
+      font-family:'JetBrains Mono', monospace;
+      font-size:10px;
+      text-transform:uppercase;
+      color:var(--ink-soft);
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="dot"></span>BookBridge <span class="tag">ADMIN</span></div>
+  <div class="header-spacer"></div>
+  <a class="back-link" href="/dashboard">&larr; Back to dashboard</a>
+  <button class="logout-btn" id="logoutBtn">Log out</button>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">Review desk</div>
+      <h1 id="heroWelcome">Admin panel</h1>
+      <div class="hero-sub" id="heroSub">Keep the shelf accurate and the community trustworthy.</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num" id="statPending">–</div><div class="label">Awaiting review</div></div>
+      <div class="hero-stat"><div class="num" id="statListings">–</div><div class="label">Total listings</div></div>
+      <div class="hero-stat"><div class="num" id="statStudents">–</div><div class="label">Students</div></div>
+    </div>
+  </div>
+</section>
+
+<main>
+  <!-- ── Section drawers ──────────────────────────────────── -->
+  <div class="section-tiles" id="sectionTiles">
+    <button class="sec-tile active" data-panel="pending">
+      <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="sec-title">Pending donations</div>
+      <div class="sec-desc">Waiting here until approved for the shelf.</div>
+      <span class="sec-count alert" id="countPending">–</span>
+    </button>
+
+    <button class="sec-tile" data-panel="listings">
+      <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5V6a2.5 2.5 0 012.5-2.5H20v13M4 19.5A2.5 2.5 0 006.5 22H20v-2.5"/></svg></div>
+      <div class="sec-title">All listings</div>
+      <div class="sec-desc">Every book on BookBridge, live or hidden.</div>
+      <span class="sec-count" id="countListings">–</span>
+    </button>
+
+    <button class="sec-tile" data-panel="students">
+      <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <div class="sec-title">Students</div>
+      <div class="sec-desc">Verify trusted accounts, or ban bad actors.</div>
+      <span class="sec-count" id="countStudents">–</span>
+    </button>
+  </div>
+
+  <!-- Pending donations -->
+  <section class="panel active" id="panel-pending">
+    <div class="catalog-head">
+      <div class="section-heading">Pending donations</div>
+      <div class="section-sub">Donation listings wait here until approved — they don't show up on the shelf until then.</div>
+    </div>
+    <div id="pendingContent"></div>
+  </section>
+
+  <!-- All listings -->
+  <section class="panel" id="panel-listings">
+    <div class="catalog-head">
+      <div class="section-heading">All listings</div>
+      <div class="section-sub">Every book on BookBridge. Remove anything fake, spammy, or against the rules.</div>
+    </div>
+    <div id="listingsContent"></div>
+  </section>
+
+  <!-- Students -->
+  <section class="panel" id="panel-students">
+    <div class="catalog-head">
+      <div class="section-heading">Students</div>
+      <div class="section-sub">Verify trusted accounts, or ban accounts that are abusing the platform.</div>
+    </div>
+    <div id="studentsContent"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let me = null;
+
+  function showToast(msg, isError){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 2400);
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
+    window.location.href = '/';
+  });
+
+  async function loadMe(){
+    try{
+      const res = await fetch('/api/me');
+      if(!res.ok) throw new Error();
+      me = await res.json();
+      if(!me.is_admin){ window.location.href = '/dashboard'; return; }
+      const first = (me.display_name || me.name || '').split(' ')[0];
+      if(first) document.getElementById('heroSub').textContent = `Signed in as ${me.display_name || me.name} — keep the shelf accurate and the community trustworthy.`;
+    }catch(e){
+      window.location.href = '/';
+    }
+  }
+
+  async function refreshHeroStats(){
+    try{
+      const [pendingRes, allRes, studentsRes] = await Promise.all([
+        fetch('/api/admin/books?filter=pending'),
+        fetch('/api/admin/books'),
+        fetch('/api/admin/students'),
+      ]);
+      const pending = pendingRes.ok ? await pendingRes.json() : [];
+      const all = allRes.ok ? await allRes.json() : [];
+      const students = studentsRes.ok ? await studentsRes.json() : [];
+
+      document.getElementById('statPending').textContent = pending.length;
+      document.getElementById('statListings').textContent = all.length;
+      document.getElementById('statStudents').textContent = students.length;
+
+      document.getElementById('countPending').textContent = pending.length;
+      document.getElementById('countListings').textContent = all.length;
+      document.getElementById('countStudents').textContent = students.length;
+    }catch(e){ /* leave dashes if unreachable */ }
+  }
+
+  // ── Section tile switching ───────────────────────────────
+  document.getElementById('sectionTiles').addEventListener('click', (e) => {
+    const tile = e.target.closest('.sec-tile');
+    if(!tile) return;
+    document.querySelector('.sec-tile.active')?.classList.remove('active');
+    tile.classList.add('active');
+    document.querySelector('.panel.active').classList.remove('active');
+    const panel = tile.dataset.panel;
+    document.getElementById('panel-' + panel).classList.add('active');
+    if(panel === 'pending') loadPending();
+    if(panel === 'listings') loadListings();
+    if(panel === 'students') loadStudents();
+  });
+
+  // ── Pending donations ────────────────────────────────────
+  async function loadPending(){
+    const el = document.getElementById('pendingContent');
+    el.innerHTML = 'Loading…';
+    try{
+      const res = await fetch('/api/admin/books?filter=pending');
+      const books = await res.json();
+      document.getElementById('countPending').textContent = books.length;
+      document.getElementById('statPending').textContent = books.length;
+      if(!books.length){
+        el.innerHTML = '<div class="empty-state">No donations waiting on approval right now.</div>';
+        return;
+      }
+      el.innerHTML = renderTable(books, [
+        { label:'Title', render: b => `${b.title}${b.author ? ' — ' + b.author : ''}` },
+        { label:'Course', render: b => b.course || '—' },
+        { label:'Owner', render: b => `${b.owner || '—'}<br><span style="color:var(--ink-soft);font-size:11.5px">${b.owner_email || ''}</span>` },
+        { label:'Actions', render: b => `
+            <div class="row-actions">
+              <button class="action positive" onclick="approveBook(${b.id}, true)">Approve</button>
+              <button class="action danger" onclick="removeBook(${b.id})">Remove</button>
+            </div>` },
+      ]);
+    }catch(e){
+      el.innerHTML = '<div class="empty-state">Could not load pending donations.</div>';
+    }
+  }
+
+  window.approveBook = async function(id, approved){
+    try{
+      const res = await fetch(`/api/admin/books/${id}/approve`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ approved })
+      });
+      const data = await res.json();
+      if(!res.ok){ showToast(data.error || 'Could not update listing.', true); return; }
+      showToast(approved ? 'Donation approved — now visible on the shelf.' : 'Listing hidden.');
+      loadPending(); loadListings(); refreshHeroStats();
+    }catch(e){ showToast('Network error.', true); }
+  };
+
+  window.removeBook = async function(id){
+    if(!confirm('Remove this listing permanently? This can\'t be undone.')) return;
+    try{
+      const res = await fetch(`/api/admin/books/${id}`, { method:'DELETE' });
+      const data = await res.json();
+      if(!res.ok){ showToast(data.error || 'Could not remove listing.', true); return; }
+      showToast('Listing removed.');
+      loadPending(); loadListings(); refreshHeroStats();
+    }catch(e){ showToast('Network error.', true); }
+  };
+
+  // ── All listings ─────────────────────────────────────────
+  async function loadListings(){
+    const el = document.getElementById('listingsContent');
+    el.innerHTML = 'Loading…';
+    try{
+      const res = await fetch('/api/admin/books');
+      const books = await res.json();
+      document.getElementById('countListings').textContent = books.length;
+      document.getElementById('statListings').textContent = books.length;
+      if(!books.length){
+        el.innerHTML = '<div class="empty-state">No listings on BookBridge yet.</div>';
+        return;
+      }
+      el.innerHTML = renderTable(books, [
+        { label:'Title', render: b => `${b.title}${b.author ? ' — ' + b.author : ''}` },
+        { label:'Type', render: b => `<span class="badge pending">${b.listing_type}</span>` },
+        { label:'Owner', render: b => b.owner || '—' },
+        { label:'Status', render: b => b.approved
+            ? `<span class="badge verified">live</span>`
+            : `<span class="badge pending">pending approval</span>` },
+        { label:'Actions', render: b => `
+            <div class="row-actions">
+              ${b.approved
+                ? `<button class="action" onclick="approveBook(${b.id}, false)">Hide</button>`
+                : `<button class="action positive" onclick="approveBook(${b.id}, true)">Approve</button>`}
+              <button class="action danger" onclick="removeBook(${b.id})">Remove</button>
+            </div>` },
+      ]);
+    }catch(e){
+      el.innerHTML = '<div class="empty-state">Could not load listings.</div>';
+    }
+  }
+
+  // ── Students ──────────────────────────────────────────────
+  async function loadStudents(){
+    const el = document.getElementById('studentsContent');
+    el.innerHTML = 'Loading…';
+    try{
+      const res = await fetch('/api/admin/students');
+      const students = await res.json();
+      document.getElementById('countStudents').textContent = students.length;
+      document.getElementById('statStudents').textContent = students.length;
+      if(!students.length){
+        el.innerHTML = '<div class="empty-state">No students yet.</div>';
+        return;
+      }
+      el.innerHTML = renderTable(students, [
+        { label:'Name', render: s => s.display_name },
+        { label:'Email', render: s => s.email },
+        { label:'Status', render: s => [
+            s.is_admin ? '<span class="badge admin">admin</span>' : '',
+            s.verified ? '<span class="badge verified">verified</span>' : '',
+            s.banned ? '<span class="badge banned">banned</span>' : '',
+          ].filter(Boolean).join(' ') || '—' },
+        { label:'Actions', render: s => `
+            <div class="row-actions">
+              <button class="action ${s.verified ? '' : 'positive'}" onclick="toggleVerify(${s.id}, ${!s.verified})">${s.verified ? 'Unverify' : 'Verify'}</button>
+              <button class="action danger" onclick="toggleBan(${s.id}, ${!s.banned})" ${s.is_admin ? 'disabled title="Can\'t ban an admin"' : ''}>${s.banned ? 'Unban' : 'Ban'}</button>
+            </div>` },
+      ]);
+    }catch(e){
+      el.innerHTML = '<div class="empty-state">Could not load students.</div>';
+    }
+  }
+
+  window.toggleVerify = async function(id, verified){
+    try{
+      const res = await fetch(`/api/admin/students/${id}/verify`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ verified })
+      });
+      const data = await res.json();
+      if(!res.ok){ showToast(data.error || 'Could not update student.', true); return; }
+      showToast(verified ? 'Student verified.' : 'Verification removed.');
+      loadStudents();
+    }catch(e){ showToast('Network error.', true); }
+  };
+
+  window.toggleBan = async function(id, banned){
+    if(banned && !confirm('Ban this student? They will not be able to sign in.')) return;
+    try{
+      const res = await fetch(`/api/admin/students/${id}/ban`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ banned })
+      });
+      const data = await res.json();
+      if(!res.ok){ showToast(data.error || 'Could not update student.', true); return; }
+      showToast(banned ? 'Student banned.' : 'Student unbanned.');
+      loadStudents();
+    }catch(e){ showToast('Network error.', true); }
+  };
+
+  // ── Table rendering helper ───────────────────────────────
+  function renderTable(rows, columns){
+    const head = columns.map(c => `<th>${c.label}</th>`).join('');
+    const body = rows.map(r => `
+      <tr>
+        ${columns.map(c => `<td data-label="${c.label}">${c.render(r)}</td>`).join('')}
+      </tr>
+    `).join('');
+    return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  }
+
+  (async function init(){
+    await loadMe();
+    await refreshHeroStats();
+    await loadPending();
+  })();
+</script>
+</body>
+</html>

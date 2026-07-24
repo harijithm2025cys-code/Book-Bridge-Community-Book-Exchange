@@ -26,6 +26,8 @@ class Student(db.Model):
     phone = db.Column(db.String(20))
     rating = db.Column(db.Float, default=0.0)
     is_admin = db.Column(db.Boolean, default=False)
+    verified = db.Column(db.Boolean, default=False)   # admin-verified, separate from email-domain check
+    banned = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     books = db.relationship("Book", backref="owner", lazy=True)
@@ -42,6 +44,8 @@ class Student(db.Model):
             "phone": self.phone,
             "rating": self.rating,
             "is_admin": self.is_admin,
+            "verified": self.verified,
+            "banned": self.banned,
         }
 
 
@@ -65,6 +69,7 @@ class Book(db.Model):
 
     status = db.Column(db.String(20), default="available")  # available/requested/unavailable
     images = db.Column(db.Text)  # comma-separated filenames under /uploads
+    approved = db.Column(db.Boolean, default=True)  # donations start False, need admin approval
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -73,6 +78,8 @@ class Book(db.Model):
             "id": self.id,
             "owner_id": self.owner_id,
             "owner": self.owner.display_name if self.owner else None,
+            "owner_email": self.owner.email if self.owner else None,
+            "owner_verified": self.owner.verified if self.owner else False,
             "title": self.title,
             "author": self.author,
             "course": self.course,
@@ -85,6 +92,8 @@ class Book(db.Model):
             "wants_in_exchange": self.wants_in_exchange,
             "status": self.status,
             "images": self.images.split(",") if self.images else [],
+            "approved": self.approved,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -99,6 +108,19 @@ class Request(db.Model):
 
     book = db.relationship("Book")
     requester = db.relationship("Student")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "book_id": self.book_id,
+            "book_title": self.book.title if self.book else None,
+            "book_listing_type": self.book.listing_type if self.book else None,
+            "owner_id": self.book.owner_id if self.book else None,
+            "requester_id": self.requester_id,
+            "requester_name": self.requester.display_name if self.requester else None,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
 
 
 class Transaction(db.Model):

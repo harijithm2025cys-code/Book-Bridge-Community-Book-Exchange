@@ -6,7 +6,7 @@
 <title>BookBridge — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --wood-dark:#241a12;
@@ -23,6 +23,8 @@
     --moss-soft:#e9f0e3;
     --error:#a5432f;
     --error-soft:#fbeae5;
+    --blue:#3c5a73;
+    --blue-soft:#e4ecf1;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
@@ -34,24 +36,27 @@
   }
   a{ color:inherit; text-decoration:none; }
   :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
 
-  /* ── TOP BAR ─────────────────────────────────────────── */
+  /* ══════════════════════ TOP BAR ══════════════════════ */
   header{
     background:var(--wood-dark);
     color:var(--paper);
-    padding:18px 32px;
+    padding:16px 32px;
     display:flex;
     align-items:center;
-    gap:24px;
+    gap:22px;
     position:sticky;
     top:0;
-    z-index:20;
-    box-shadow:0 2px 12px rgba(0,0,0,0.18);
+    z-index:30;
+    box-shadow:0 2px 14px rgba(0,0,0,0.2);
   }
   .brand{
     font-family:'Fraunces', serif;
     font-weight:700;
-    font-size:20px;
+    font-size:19px;
     display:flex;
     align-items:center;
     gap:8px;
@@ -59,10 +64,25 @@
   }
   .brand .dot{ width:7px; height:7px; border-radius:50%; background:var(--brass); }
 
+  .nav-links{
+    display:flex;
+    gap:4px;
+    margin-left:12px;
+  }
+  .nav-links a{
+    font-size:13px;
+    font-weight:500;
+    color:#c8b89c;
+    padding:8px 12px;
+    border-radius:6px;
+  }
+  .nav-links a:hover{ color:var(--paper); background:rgba(255,255,255,0.06); }
+
   .search-wrap{
     flex:1;
-    max-width:460px;
+    max-width:420px;
     position:relative;
+    margin-left:auto;
   }
   .search-wrap input{
     width:100%;
@@ -80,21 +100,65 @@
     width:14px; height:14px; stroke:#a99a82;
   }
 
-  .header-spacer{ flex:1; }
+  .admin-link{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    color:#d8cbb0;
+    padding:8px 13px;
+    border:1px solid #4a382a;
+    border-radius:16px;
+    white-space:nowrap;
+    display:none;
+  }
+  .admin-link:hover{ background:var(--wood-light); }
 
-  .btn-list{
-    background:var(--brass);
-    color:var(--wood-dark);
+  .cart-btn{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    background:none;
+    border:1px solid #4a382a;
+    color:#d8cbb0;
     font-family:'Inter', sans-serif;
+    font-size:12.5px;
     font-weight:600;
-    font-size:13.5px;
-    padding:9px 18px;
-    border-radius:20px;
-    border:none;
+    padding:8px 14px;
+    border-radius:16px;
     cursor:pointer;
     white-space:nowrap;
   }
-  .btn-list:hover{ background:var(--brass-soft); }
+  .cart-btn:hover{ background:var(--wood-light); border-color:var(--brass); color:var(--paper); }
+  .cart-btn svg{ width:15px; height:15px; flex-shrink:0; }
+  .cart-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    font-weight:600;
+    background:var(--brass);
+    color:var(--wood-dark);
+    border-radius:9px;
+    min-width:17px;
+    height:17px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:0 4px;
+  }
+  .cart-badge.visible{ display:inline-flex; }
+
+  .logout-btn{
+    background:none;
+    border:1px solid #4a382a;
+    color:#d8cbb0;
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:16px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .logout-btn:hover{ border-color:var(--error); color:#f0b8a8; }
 
   .profile-chip{
     display:flex;
@@ -115,65 +179,206 @@
     overflow:hidden;
   }
   .avatar img{ width:100%; height:100%; object-fit:cover; }
-  .profile-name{ font-size:13.5px; font-weight:500; }
+  .profile-name{ font-size:13px; font-weight:500; line-height:1.2; }
   .profile-name .edit-hint{
     display:block;
     font-family:'JetBrains Mono', monospace;
-    font-size:10px;
+    font-size:9.5px;
     color:#a99a82;
     margin-top:1px;
   }
 
-  /* ── FILTER TABS ─────────────────────────────────────── */
-  .tabs{
-    max-width:1120px;
+  /* ══════════════════════ HERO ══════════════════════ */
+  .hero{
+    background:
+      radial-gradient(ellipse at 85% -20%, rgba(192,138,46,0.16), transparent 55%),
+      linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+    color:var(--paper);
+    padding:40px 32px 46px;
+  }
+  .hero-inner{
+    max-width:1160px;
     margin:0 auto;
-    padding:28px 32px 0;
     display:flex;
-    gap:6px;
-    border-bottom:1px solid var(--paper-line);
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
   }
-  .tab{
+  .hero-eyebrow{
     font-family:'JetBrains Mono', monospace;
-    font-size:12px;
-    letter-spacing:0.04em;
+    font-size:11.5px;
+    letter-spacing:0.12em;
     text-transform:uppercase;
-    padding:10px 4px 14px;
-    margin-right:22px;
-    color:var(--ink-soft);
-    border-bottom:2px solid transparent;
-    cursor:pointer;
-    background:none; border:none;
+    color:var(--brass-soft);
+    margin-bottom:10px;
   }
-  .tab.active{
-    color:var(--wood-dark);
-    border-bottom-color:var(--brass);
+  .hero h1{
+    font-family:'Fraunces', serif;
     font-weight:600;
+    font-size:32px;
+    letter-spacing:-0.01em;
+    margin-bottom:6px;
+  }
+  .hero .hero-sub{
+    font-size:14px;
+    color:#c8b89c;
+  }
+  .hero-stats{
+    display:flex;
+    gap:28px;
+  }
+  .hero-stat{
+    text-align:right;
+  }
+  .hero-stat .num{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    color:var(--brass-soft);
+    line-height:1;
+  }
+  .hero-stat .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:#a99a82;
+    margin-top:5px;
   }
 
+  /* ══════════════════ QUICK ACTIONS ═══════════════════
+     Signature element: each tile reads like a card-catalog
+     drawer — a brass pull-tab at top, a routing-label style
+     name, and a small stamped count in the corner. Same
+     vocabulary as the login page's book-spine shelf and the
+     listing cards' library-card motif, so all three screens
+     read as one system.
+  ─────────────────────────────────────────────────────── */
   main{
-    max-width:1120px;
+    max-width:1160px;
     margin:0 auto;
-    padding:32px;
+    padding:0 32px 48px;
+  }
+  .quick-actions{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:16px;
+    margin-top:-30px;
+    margin-bottom:36px;
+  }
+  .qa-tile{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:8px;
+    padding:22px 20px 18px;
+    text-align:left;
+    cursor:pointer;
+    position:relative;
+    box-shadow:0 8px 20px rgba(36,24,18,0.10);
+    transition:transform .15s ease, box-shadow .15s ease;
+    font-family:inherit;
+  }
+  .qa-tile:hover{
+    transform:translateY(-3px);
+    box-shadow:0 14px 28px rgba(36,24,18,0.16);
+  }
+  .qa-tile.active{
+    border-color:var(--brass);
+    box-shadow:0 0 0 1.5px var(--brass), 0 14px 28px rgba(36,24,18,0.16);
+  }
+  .qa-tile::before{
+    /* drawer pull tab */
+    content:"";
+    position:absolute;
+    top:-6px; left:20px;
+    width:26px; height:10px;
+    background:var(--brass);
+    border-radius:0 0 4px 4px;
+    opacity:0.85;
+  }
+  .qa-icon{
+    width:34px; height:34px;
+    border-radius:7px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:14px;
+  }
+  .qa-icon svg{ width:17px; height:17px; }
+  .qa-tile[data-tile="list"] .qa-icon{ background:#f6ecd8; color:#8a5f16; }
+  .qa-tile[data-tile="browse"] .qa-icon{ background:var(--moss-soft); color:var(--moss); }
+  .qa-tile[data-tile="mine"] .qa-icon{ background:var(--blue-soft); color:var(--blue); }
+  .qa-tile[data-tile="incoming"] .qa-icon{ background:#f4e6e0; color:#7a3324; }
+  .qa-tile[data-tile="outgoing"] .qa-icon{ background:#efe6d1; color:#6b5730; }
+  .qa-tile[data-tile="borrowed"] .qa-icon{ background:#e9e3f0; color:#5a4a7a; }
+
+  .qa-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:16.5px;
+    margin-bottom:3px;
+  }
+  .qa-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.4;
+  }
+  .qa-count{
+    position:absolute;
+    top:18px; right:18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:500;
+    color:var(--ink-soft);
+    background:var(--paper);
+    border:1px solid var(--paper-line);
+    border-radius:10px;
+    padding:2px 8px;
+    min-width:22px;
+    text-align:center;
   }
 
+  /* ══════════════════ CATALOG SECTION ═══════════════════ */
+  .catalog-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
   .section-heading{
     font-family:'Fraunces', serif;
-    font-size:22px;
+    font-size:21px;
     font-weight:600;
-    margin-bottom:4px;
   }
   .section-sub{
     font-size:13px;
     color:var(--ink-soft);
-    margin-bottom:24px;
   }
+  .filter-pills{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .filter-pill{
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:7px 14px;
+    border-radius:16px;
+    border:1.5px solid var(--paper-line);
+    background:var(--card);
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .filter-pill:hover{ border-color:var(--brass); }
+  .filter-pill.active[data-filter="all"]{ border-color:var(--wood); color:var(--wood); background:var(--paper); }
+  .filter-pill.active[data-filter="sell"]{ border-color:var(--brass); color:var(--brass); background:#f6ecd8; }
+  .filter-pill.active[data-filter="donate"]{ border-color:var(--moss); color:var(--moss); background:var(--moss-soft); }
+  .filter-pill.active[data-filter="lend"]{ border-color:var(--blue); color:var(--blue); background:var(--blue-soft); }
+  .filter-pill.active[data-filter="exchange"]{ border-color:#9a4a3f; color:#9a4a3f; background:#f4e6e0; }
 
-  /* ── SIGNATURE ELEMENT: LIBRARY INDEX CARD ──────────────
-     Each listing reads like a checkout card from a physical
-     library catalog — perforated top edge, rotated stamp,
-     due-date-style meta line, dashed "call number" footer.
-  ────────────────────────────────────────────────────────── */
   .card-grid{
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
@@ -193,7 +398,6 @@
     box-shadow:0 10px 22px rgba(36,24,18,0.12);
   }
   .book-card::before{
-    /* perforation strip */
     content:"";
     position:absolute;
     top:0; left:16px; right:16px;
@@ -235,11 +439,9 @@
     transform:rotate(6deg);
     background:var(--card);
   }
-  /* Stamp colors mirror the spine colors on the login page's shelf,
-     so the two pages read as one visual system. */
   .stamp.sell{     color:var(--brass); }
   .stamp.donate{   color:var(--moss); }
-  .stamp.lend{     color:#3c5a73; }
+  .stamp.lend{     color:var(--blue); }
   .stamp.exchange{ color:#9a4a3f; }
 
   .book-extra{
@@ -251,15 +453,11 @@
     margin-bottom:14px;
   }
   .book-extra.price{ background:#f6ecd8; color:#8a5f16; }
-  .book-extra.lend{ background:#e4ecf1; color:#2f4a5e; }
+  .book-extra.lend{ background:var(--blue-soft); color:#2f4a5e; }
   .book-extra.exchange{ background:#f4e6e0; color:#7a3324; }
+  .book-extra.pending{ background:#f6ecd8; color:#8a5f16; }
 
-  .book-tags{
-    display:flex;
-    flex-wrap:wrap;
-    gap:5px;
-    margin-bottom:12px;
-  }
+  .book-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
   .book-tag{
     font-family:'JetBrains Mono', monospace;
     font-size:10px;
@@ -269,163 +467,6 @@
     border-radius:3px;
     padding:2px 7px;
   }
-
-  /* ── MODAL: List a book ─────────────────────────────────── */
-  .modal-backdrop{
-    display:none;
-    position:fixed; inset:0;
-    background:rgba(36,26,18,0.55);
-    z-index:50;
-    align-items:flex-start;
-    justify-content:center;
-    padding:60px 20px;
-    overflow-y:auto;
-  }
-  .modal-backdrop.open{ display:flex; }
-  .modal{
-    background:var(--paper);
-    width:100%;
-    max-width:480px;
-    border-radius:6px;
-    padding:32px 30px 28px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.35);
-    position:relative;
-  }
-  .modal-close{
-    position:absolute; top:18px; right:18px;
-    background:none; border:none; cursor:pointer;
-    color:var(--ink-soft); font-size:20px; line-height:1;
-    padding:4px;
-  }
-  .modal h2{
-    font-family:'Fraunces', serif;
-    font-size:22px;
-    font-weight:600;
-    margin-bottom:6px;
-  }
-  .modal .modal-sub{
-    font-size:13px; color:var(--ink-soft); margin-bottom:22px;
-  }
-  .field-row{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-  .field-group{ margin-bottom:16px; }
-  .field-group label{
-    display:block;
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:0.04em;
-    color:var(--ink-soft);
-    margin-bottom:6px;
-  }
-  .field-group input, .field-group textarea, .field-group select{
-    width:100%;
-    background:#fff;
-    border:1px solid var(--paper-line);
-    border-radius:5px;
-    padding:9px 11px;
-    font-family:'Inter', sans-serif;
-    font-size:13.5px;
-    color:var(--ink);
-  }
-  .field-group input:focus, .field-group textarea:focus, .field-group select:focus{
-    border-color:var(--brass);
-  }
-  .type-pills{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-  .type-pill{
-    font-family:'Inter', sans-serif;
-    font-size:12.5px;
-    font-weight:600;
-    padding:8px 14px;
-    border-radius:18px;
-    border:1.5px solid var(--paper-line);
-    background:#fff;
-    color:var(--ink-soft);
-    cursor:pointer;
-  }
-  .type-pill[data-type="sell"].active{ border-color:var(--brass); color:var(--brass); background:#f6ecd8; }
-  .type-pill[data-type="donate"].active{ border-color:var(--moss); color:var(--moss); background:var(--moss-soft); }
-  .type-pill[data-type="lend"].active{ border-color:#3c5a73; color:#3c5a73; background:#e4ecf1; }
-  .type-pill[data-type="exchange"].active{ border-color:#9a4a3f; color:#9a4a3f; background:#f4e6e0; }
-
-  .conditional-field{ display:none; }
-  .conditional-field.visible{ display:block; }
-
-  .image-upload{
-    border:1.5px dashed var(--paper-line);
-    border-radius:6px;
-    padding:14px;
-    text-align:center;
-    cursor:pointer;
-    background:#fff;
-  }
-  .image-upload:hover{ border-color:var(--brass); }
-  .image-upload input[type="file"]{ display:none; }
-  .image-upload .hint{
-    font-size:12px;
-    color:var(--ink-soft);
-  }
-  .image-preview-row{
-    display:flex;
-    gap:8px;
-    margin-top:10px;
-    flex-wrap:wrap;
-  }
-  .image-preview{
-    width:56px; height:56px;
-    border-radius:5px;
-    overflow:hidden;
-    border:1px solid var(--paper-line);
-    position:relative;
-  }
-  .image-preview img{ width:100%; height:100%; object-fit:cover; }
-
-  .modal-actions{
-    display:flex;
-    justify-content:flex-end;
-    gap:10px;
-    margin-top:22px;
-  }
-  .btn-secondary{
-    background:none;
-    border:1px solid var(--paper-line);
-    color:var(--ink-soft);
-    font-weight:600;
-    font-size:13px;
-    padding:9px 16px;
-    border-radius:20px;
-    cursor:pointer;
-  }
-  .btn-primary{
-    background:var(--brass);
-    border:none;
-    color:var(--wood-dark);
-    font-weight:600;
-    font-size:13px;
-    padding:9px 18px;
-    border-radius:20px;
-    cursor:pointer;
-  }
-  .btn-primary:hover{ background:var(--brass-soft); }
-  .btn-primary:disabled{ opacity:0.6; cursor:default; }
-  .form-error{
-    font-size:12.5px;
-    color:var(--error);
-    background:var(--error-soft);
-    border-radius:5px;
-    padding:8px 11px;
-    margin-bottom:16px;
-    display:none;
-  }
-  .form-error.visible{ display:block; }
-
   .book-title{
     font-family:'Fraunces', serif;
     font-weight:600;
@@ -433,11 +474,7 @@
     line-height:1.3;
     margin:6px 40px 4px 0;
   }
-  .book-author{
-    font-size:12.5px;
-    color:var(--ink-soft);
-    margin-bottom:14px;
-  }
+  .book-author{ font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; }
   .book-meta{
     font-family:'JetBrains Mono', monospace;
     font-size:11px;
@@ -448,7 +485,6 @@
     margin-bottom:14px;
   }
   .book-meta .dot-sep{ width:3px; height:3px; border-radius:50%; background:var(--paper-line); }
-
   .book-card-footer{
     display:flex;
     align-items:center;
@@ -474,7 +510,6 @@
   }
   .card-action:hover{ color:var(--wood-dark); }
 
-  /* ── EMPTY STATE: BLANK CATALOG DRAWER ──────────────────── */
   .empty-drawer{
     border:1px dashed var(--paper-line);
     border-radius:4px;
@@ -517,12 +552,305 @@
     cursor:pointer;
   }
 
+  .requests-panel{ margin-bottom:24px; }
+  .request-row{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+
+  /* ══════════════════ MY CART / ACTIVITY DRAWER ═══════════════════ */
+  .cart-backdrop{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(36,26,18,0.45);
+    z-index:55;
+    justify-content:flex-end;
+  }
+  .cart-backdrop.open{ display:flex; }
+  .cart-drawer{
+    width:100%;
+    max-width:400px;
+    height:100%;
+    background:var(--paper);
+    box-shadow:-16px 0 40px rgba(0,0,0,0.25);
+    display:flex;
+    flex-direction:column;
+    transform:translateX(100%);
+    transition:transform .25s ease;
+  }
+  .cart-backdrop.open .cart-drawer{ transform:translateX(0); }
+  .cart-drawer-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    padding:26px 26px 4px;
+  }
+  .cart-drawer-head h2{ font-family:'Fraunces', serif; font-size:21px; font-weight:600; }
+  .cart-drawer-sub{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:0 26px 18px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .cart-activity-list{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 22px 26px;
+  }
+  .activity-row{
+    display:flex;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px dashed var(--paper-line);
+  }
+  .activity-row:last-child{ border-bottom:none; }
+  .activity-icon{
+    width:30px; height:30px;
+    border-radius:7px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .activity-icon svg{ width:14px; height:14px; }
+  .activity-icon.listed{ background:#f6ecd8; color:#8a5f16; }
+  .activity-icon.sent{ background:var(--blue-soft); color:var(--blue); }
+  .activity-icon.incoming{ background:#f4e6e0; color:#7a3324; }
+  .activity-icon.accepted{ background:var(--moss-soft); color:var(--moss); }
+  .activity-icon.rejected{ background:var(--error-soft); color:var(--error); }
+  .activity-text{ flex:1; min-width:0; }
+  .activity-text .a-title{ font-size:13px; color:var(--ink); line-height:1.4; }
+  .activity-text .a-title strong{ font-weight:600; }
+  .activity-text .a-time{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:#a99a82;
+    margin-top:3px;
+  }
+  .cart-empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:48px 12px;
+  }
+
+  /* ══════════════════ MODAL ═══════════════════ */
+  .modal-backdrop{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(36,26,18,0.55);
+    z-index:50;
+    align-items:flex-start;
+    justify-content:center;
+    padding:60px 20px;
+    overflow-y:auto;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--paper);
+    width:100%;
+    max-width:480px;
+    border-radius:6px;
+    padding:32px 30px 28px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    position:relative;
+  }
+  .modal-close{
+    position:absolute; top:18px; right:18px;
+    background:none; border:none; cursor:pointer;
+    color:var(--ink-soft); font-size:20px; line-height:1;
+    padding:4px;
+  }
+  .modal h2{ font-family:'Fraunces', serif; font-size:22px; font-weight:600; margin-bottom:6px; }
+  .modal .modal-sub{ font-size:13px; color:var(--ink-soft); margin-bottom:22px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .field-group{ margin-bottom:16px; }
+  .field-group label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field-group input, .field-group textarea, .field-group select{
+    width:100%;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:5px;
+    padding:9px 11px;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    color:var(--ink);
+  }
+  .field-group input:focus, .field-group textarea:focus, .field-group select:focus{ border-color:var(--brass); }
+  .type-pills{ display:flex; gap:8px; flex-wrap:wrap; }
+  .type-pill{
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:18px;
+    border:1.5px solid var(--paper-line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .type-pill[data-type="sell"].active{ border-color:var(--brass); color:var(--brass); background:#f6ecd8; }
+  .type-pill[data-type="donate"].active{ border-color:var(--moss); color:var(--moss); background:var(--moss-soft); }
+  .type-pill[data-type="lend"].active{ border-color:var(--blue); color:var(--blue); background:var(--blue-soft); }
+  .type-pill[data-type="exchange"].active{ border-color:#9a4a3f; color:#9a4a3f; background:#f4e6e0; }
+  .conditional-field{ display:none; }
+  .conditional-field.visible{ display:block; }
+  .image-upload{
+    border:1.5px dashed var(--paper-line);
+    border-radius:6px;
+    padding:14px;
+    text-align:center;
+    cursor:pointer;
+    background:#fff;
+  }
+  .image-upload:hover{ border-color:var(--brass); }
+  .image-upload input[type="file"]{ display:none; }
+  .image-upload .hint{ font-size:12px; color:var(--ink-soft); }
+  .image-preview-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .image-preview{ width:56px; height:56px; border-radius:5px; overflow:hidden; border:1px solid var(--paper-line); }
+  .image-preview img{ width:100%; height:100%; object-fit:cover; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+  .btn-secondary{
+    background:none; border:1px solid var(--paper-line); color:var(--ink-soft);
+    font-weight:600; font-size:13px; padding:9px 16px; border-radius:20px; cursor:pointer;
+  }
+  .btn-primary{
+    background:var(--brass); border:none; color:var(--wood-dark);
+    font-weight:600; font-size:13px; padding:9px 18px; border-radius:20px; cursor:pointer;
+  }
+  .btn-primary:hover{ background:var(--brass-soft); }
+  .btn-primary:disabled{ opacity:0.6; cursor:default; }
+  .form-error{
+    font-size:12.5px; color:var(--error); background:var(--error-soft);
+    border-radius:5px; padding:8px 11px; margin-bottom:16px; display:none;
+  }
+  .form-error.visible{ display:block; }
+
+  .toast{
+    position:fixed; bottom:24px; right:24px;
+    background:var(--wood-dark); color:var(--paper);
+    padding:12px 18px; border-radius:8px; font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    display:none; z-index:100;
+  }
+
+  /* ══════════════ COMMUNITY GUIDELINES PLAQUE ══════════════
+     Same signature element as the login page — keeps the two
+     screens reading as one system.
+  ─────────────────────────────────────────────────────────── */
+  .guidelines-wrap{ margin-bottom:44px; }
+  .guidelines-eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .guidelines-heading{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    margin-bottom:6px;
+    color:var(--ink);
+  }
+  .guidelines-sub{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    max-width:560px;
+    line-height:1.6;
+    margin-bottom:24px;
+  }
+  .plaque{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:32px 32px 26px;
+    box-shadow:0 8px 20px rgba(36,24,18,0.07);
+  }
+  .plaque::before, .plaque::after,
+  .plaque-bottom-pin-l, .plaque-bottom-pin-r{
+    content:"";
+    position:absolute;
+    width:8px; height:8px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--brass-soft), var(--brass) 70%);
+    box-shadow:0 1px 2px rgba(0,0,0,0.3);
+  }
+  .plaque::before{ top:14px; left:14px; }
+  .plaque::after{ top:14px; right:14px; }
+  .plaque-bottom-pin-l{ bottom:14px; left:14px; }
+  .plaque-bottom-pin-r{ bottom:14px; right:14px; }
+
+  .rule-grid{
+    list-style:none;
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:0 32px;
+  }
+  .rule-item{
+    display:flex;
+    gap:14px;
+    padding:14px 0;
+    border-bottom:1px dashed var(--paper-line);
+  }
+  .rule-grid .rule-item:nth-last-child(-n+2){ border-bottom:none; }
+  .rule-num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    font-weight:500;
+    color:var(--brass);
+    border:1.5px solid var(--brass);
+    border-radius:50%;
+    width:24px; height:24px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    margin-top:1px;
+  }
+  .rule-text .rule-title{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--ink);
+    margin-bottom:2px;
+  }
+  .rule-text .rule-body{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.5;
+  }
+
+  @media (max-width:900px){
+    .quick-actions{ grid-template-columns:repeat(2, 1fr); }
+    .rule-grid{ grid-template-columns:1fr; }
+    .rule-grid .rule-item:nth-last-child(-n+2){ border-bottom:1px dashed var(--paper-line); }
+    .rule-grid .rule-item:last-child{ border-bottom:none; }
+  }
   @media (max-width:720px){
-    header{ padding:14px 18px; gap:14px; }
+    header{ padding:14px 18px; gap:12px; flex-wrap:wrap; }
+    .nav-links{ display:none; }
     .search-wrap{ display:none; }
     .profile-name{ display:none; }
-    main{ padding:24px 18px; }
-    .tabs{ padding:22px 18px 0; overflow-x:auto; }
+    .hero{ padding:32px 18px 40px; }
+    .hero-inner{ align-items:flex-start; }
+    .hero-stats{ gap:18px; }
+    main{ padding:0 18px 40px; }
+    .quick-actions{ grid-template-columns:1fr; margin-top:-24px; }
     .field-row{ grid-template-columns:1fr; }
   }
 </style>
@@ -531,16 +859,23 @@
 
 <header>
   <div class="brand"><span class="dot"></span>BookBridge</div>
+  <nav class="nav-links">
+    <a href="/dashboard">Home</a>
+    <a href="#catalog" id="navBrowse">Browse</a>
+  </nav>
 
   <div class="search-wrap">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
     <input type="text" id="searchInput" placeholder="Search by title, author, or course code…">
   </div>
 
-  <div class="header-spacer"></div>
+  <button class="cart-btn" id="myCartBtn" aria-haspopup="true" aria-controls="cartBackdrop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+    <span>My Cart</span>
+    <span class="cart-badge" id="cartBadge">0</span>
+  </button>
 
-  <button class="btn-list" id="listBookBtn">+ List a book</button>
-
+  <a class="admin-link" id="adminLink" href="/admin">Admin panel</a>
   <div class="profile-chip" id="profileChip">
     <div class="avatar" id="avatarEl">?</div>
     <div class="profile-name">
@@ -548,30 +883,167 @@
       <span class="edit-hint">tap to rename</span>
     </div>
   </div>
+  <button class="logout-btn" id="logoutBtn">Log out</button>
 </header>
 
-<nav class="tabs">
-  <button class="tab active" data-tab="all">All Listings</button>
-  <button class="tab" data-tab="mine">My Listings</button>
-  <button class="tab" data-tab="borrowed">Borrowed</button>
-  <button class="tab" data-tab="saved">Saved</button>
-</nav>
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">SECE Campus Exchange</div>
+      <h1 id="heroWelcome">Welcome back</h1>
+      <div class="hero-sub" id="heroSub">Here's what's happening on your shelf.</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num" id="statAvailable">–</div><div class="label">On the shelf</div></div>
+      <div class="hero-stat"><div class="num" id="statMine">–</div><div class="label">My listings</div></div>
+      <div class="hero-stat"><div class="num" id="statIncoming">–</div><div class="label">Awaiting you</div></div>
+    </div>
+  </div>
+</section>
 
 <main>
-  <div class="section-heading" id="sectionHeading">The shelf</div>
-  <div class="section-sub" id="sectionSub">Everything currently available across campus.</div>
+  <!-- ── Quick-action drawers ─────────────────────────────── -->
+  <div class="quick-actions" id="quickActions">
+    <button class="qa-tile" data-tile="list">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="qa-title">List a book</div>
+      <div class="qa-desc">Put something on the shelf for others to find.</div>
+    </button>
 
-  <div class="card-grid" id="cardGrid">
-    <!-- Cards render here via renderCards() -->
+    <button class="qa-tile active" data-tile="browse">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></div>
+      <div class="qa-title">Browse the shelf</div>
+      <div class="qa-desc">Everything currently available on campus.</div>
+      <span class="qa-count" id="countBrowse">–</span>
+    </button>
+
+    <button class="qa-tile" data-tile="mine">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5V6a2.5 2.5 0 012.5-2.5H20v13M4 19.5A2.5 2.5 0 006.5 22H20v-2.5"/></svg></div>
+      <div class="qa-title">My listings</div>
+      <div class="qa-desc">Books you've put up to lend, sell, donate, or swap.</div>
+      <span class="qa-count" id="countMine">–</span>
+    </button>
+
+    <button class="qa-tile" data-tile="incoming">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+      <div class="qa-title">Requests on my books</div>
+      <div class="qa-desc">Other students waiting on you to respond.</div>
+      <span class="qa-count" id="countIncoming">–</span>
+    </button>
+
+    <button class="qa-tile" data-tile="outgoing">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+      <div class="qa-title">My requests</div>
+      <div class="qa-desc">Books you've asked to borrow, buy, or claim.</div>
+      <span class="qa-count" id="countOutgoing">–</span>
+    </button>
+
+    <button class="qa-tile" data-tile="borrowed">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg></div>
+      <div class="qa-title">Borrowed &amp; claimed</div>
+      <div class="qa-desc">Books you've successfully picked up.</div>
+      <span class="qa-count" id="countBorrowed">–</span>
+    </button>
   </div>
 
-  <div class="empty-drawer" id="emptyDrawer" style="display:none;">
-    <div class="drawer-icon"></div>
-    <h3 id="emptyTitle">This drawer's empty</h3>
-    <p id="emptyBody">No one's listed a book here yet. Be the first.</p>
-    <button id="emptyListBtn">+ List a book</button>
+  <!-- ── Community guidelines ────────────────────────────────── -->
+  <div class="guidelines-wrap">
+    <div class="guidelines-eyebrow">Reading Room Rules</div>
+    <div class="guidelines-heading">Ground rules for every exchange</div>
+    <p class="guidelines-sub">BookBridge only works if everyone treats it like they're borrowing from a classmate, not a stranger.</p>
+
+    <div class="plaque">
+      <span class="plaque-bottom-pin-l"></span><span class="plaque-bottom-pin-r"></span>
+      <ol class="rule-grid">
+        <li class="rule-item">
+          <span class="rule-num">1</span>
+          <div class="rule-text">
+            <div class="rule-title">List only what you actually own</div>
+            <div class="rule-body">Every listing should be a real book in your hands, ready to hand off.</div>
+          </div>
+        </li>
+        <li class="rule-item">
+          <span class="rule-num">2</span>
+          <div class="rule-text">
+            <div class="rule-title">Meet on campus, in public</div>
+            <div class="rule-body">Handoffs happen in shared spaces — library, canteen, or department block.</div>
+          </div>
+        </li>
+        <li class="rule-item">
+          <span class="rule-num">3</span>
+          <div class="rule-text">
+            <div class="rule-title">Describe the condition honestly</div>
+            <div class="rule-body">Mark it New, Good, Fair, or Worn accurately, and flag any damage up front.</div>
+          </div>
+        </li>
+        <li class="rule-item">
+          <span class="rule-num">4</span>
+          <div class="rule-text">
+            <div class="rule-title">Respond to requests promptly</div>
+            <div class="rule-body">Accept or decline within a few days — don't hold a listing hostage.</div>
+          </div>
+        </li>
+        <li class="rule-item">
+          <span class="rule-num">5</span>
+          <div class="rule-text">
+            <div class="rule-title">Donations get a quick admin check</div>
+            <div class="rule-body">Donated books are reviewed before going live, to keep the shelf genuine.</div>
+          </div>
+        </li>
+        <li class="rule-item">
+          <span class="rule-num">6</span>
+          <div class="rule-text">
+            <div class="rule-title">No-shows and fake listings get you banned</div>
+            <div class="rule-body">Repeated no-shows or bad-faith listings result in account suspension.</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ── Catalog ──────────────────────────────────────────── -->
+  <div id="catalog">
+    <div class="catalog-head">
+      <div>
+        <div class="section-heading" id="sectionHeading">The shelf</div>
+        <div class="section-sub" id="sectionSub">Everything currently available across campus.</div>
+      </div>
+    </div>
+
+    <div class="filter-pills" id="filterPills">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="lend">Borrow</button>
+      <button class="filter-pill" data-filter="sell">Buy</button>
+      <button class="filter-pill" data-filter="donate">Donate</button>
+      <button class="filter-pill" data-filter="exchange">Exchange</button>
+    </div>
+
+    <div class="requests-panel" id="requestsPanel" style="display:none;"></div>
+
+    <div class="card-grid" id="cardGrid"></div>
+
+    <div class="empty-drawer" id="emptyDrawer" style="display:none;">
+      <div class="drawer-icon"></div>
+      <h3 id="emptyTitle">This drawer's empty</h3>
+      <p id="emptyBody">No one's listed a book here yet. Be the first.</p>
+      <button id="emptyListBtn">+ List a book</button>
+    </div>
   </div>
 </main>
+
+<div class="toast" id="dashToast"></div>
+
+<!-- ── My Cart / activity drawer ────────────────────────────────── -->
+<div class="cart-backdrop" id="cartBackdrop">
+  <aside class="cart-drawer">
+    <div class="cart-drawer-head">
+      <h2>My activity</h2>
+      <button class="modal-close" id="cartCloseBtn" aria-label="Close">&times;</button>
+    </div>
+    <p class="cart-drawer-sub">Everything you've listed, requested, and exchanged on BookBridge.</p>
+    <div class="cart-activity-list" id="cartActivityList"></div>
+  </aside>
+</div>
 
 <!-- ── List a book modal ─────────────────────────────────────── -->
 <div class="modal-backdrop" id="modalBackdrop">
@@ -604,14 +1076,9 @@
           <label for="fDept">Department</label>
           <select id="fDept">
             <option value="">Select…</option>
-            <option>CSE</option>
-            <option>ECE</option>
-            <option>EEE</option>
-            <option>Mech</option>
-            <option>Civil</option>
-            <option>IT</option>
-            <option>AI & DS</option>
-            <option>Other</option>
+            <option>CSE</option><option>ECE</option><option>EEE</option>
+            <option>Mech</option><option>Civil</option><option>IT</option>
+            <option>AI &amp; DS</option><option>Other</option>
           </select>
         </div>
         <div class="field-group">
@@ -628,10 +1095,7 @@
         <label for="fCondition">Condition</label>
         <select id="fCondition">
           <option value="">Select…</option>
-          <option>New</option>
-          <option>Good</option>
-          <option>Fair</option>
-          <option>Worn</option>
+          <option>New</option><option>Good</option><option>Fair</option><option>Worn</option>
         </select>
       </div>
 
@@ -649,12 +1113,10 @@
         <label for="fPrice">Price (₹)</label>
         <input type="number" id="fPrice" min="0" step="1" placeholder="e.g. 150">
       </div>
-
       <div class="field-group conditional-field" data-for="lend">
         <label for="fDuration">Lending period</label>
         <input type="text" id="fDuration" placeholder="e.g. 2 weeks, till end of semester">
       </div>
-
       <div class="field-group conditional-field" data-for="exchange">
         <label for="fWants">Looking to exchange for</label>
         <input type="text" id="fWants" placeholder="e.g. any DBMS textbook">
@@ -678,7 +1140,7 @@
 </div>
 
 <script>
-  // ── Default display name logic ────────────────────────────
+  // ── Display name fallback ────────────────────────────────
   function nameFromEmail(email){
     const local = (email || '').split('@')[0];
     const cleaned = local.replace(/[0-9]+$/g, '');
@@ -686,40 +1148,58 @@
     if(parts.length === 0) return email;
     return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
   }
-
   function initials(name){
     return name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
   }
 
   let currentUser = null;
+  let activeTile = 'browse';
+  let activeTypeFilter = 'all';
+  let books = [];
+  let searchTimer = null;
 
+  const TILE_COPY = {
+    browse:   { heading:"The shelf", sub:"Everything currently available across campus." },
+    mine:     { heading:"My listings", sub:"Books you've put up for lending, exchange, or donation." },
+    incoming: { heading:"Requests on my books", sub:"Respond to students waiting on your listings." },
+    outgoing: { heading:"My requests", sub:"Books you've asked to borrow, buy, or claim." },
+    borrowed: { heading:"Borrowed & claimed", sub:"Books you've successfully picked up." },
+  };
+
+  // ── Profile ───────────────────────────────────────────────
   async function loadProfile(){
     try{
       const res = await fetch('/api/me');
       if(!res.ok) throw new Error('not signed in');
       const user = await res.json();
-
       const displayName = user.display_name || user.name || nameFromEmail(user.email);
       currentUser = { ...user, display_name: displayName };
 
       document.getElementById('displayNameEl').textContent = displayName;
+      document.getElementById('heroWelcome').textContent = `Welcome back, ${displayName.split(' ')[0]}`;
+      const subParts = [user.department, user.year ? `Year ${user.year}` : null].filter(Boolean);
+      document.getElementById('heroSub').textContent = subParts.length
+        ? subParts.join(' · ')
+        : "Here's what's happening on your shelf.";
+
       const avatarEl = document.getElementById('avatarEl');
       if(user.picture){
         avatarEl.innerHTML = `<img src="${user.picture}" alt="${displayName}">`;
       } else {
         avatarEl.textContent = initials(displayName);
       }
+      if(user.is_admin){
+        document.getElementById('adminLink').style.display = 'inline-block';
+      }
     }catch(e){
       window.location.href = '/';
     }
   }
 
-  // ── Renaming (default name is editable, not fixed) ─────────
   document.getElementById('profileChip').addEventListener('click', async () => {
     if(!currentUser) return;
     const next = prompt('Display name on BookBridge:', currentUser.display_name);
     if(!next || next.trim() === '' || next === currentUser.display_name) return;
-
     const res = await fetch('/api/update-profile', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
@@ -728,45 +1208,191 @@
     if(res.ok){
       currentUser.display_name = next.trim();
       document.getElementById('displayNameEl').textContent = currentUser.display_name;
+      document.getElementById('heroWelcome').textContent = `Welcome back, ${currentUser.display_name.split(' ')[0]}`;
       const avatarEl = document.getElementById('avatarEl');
       if(!currentUser.picture) avatarEl.textContent = initials(currentUser.display_name);
     }
   });
 
-  // ── Books, now backed by the real /api/books database route ────
-  let books = [];
-  let activeTab = 'all';
-  let searchTimer = null;
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
+    window.location.href = '/';
+  });
 
+  // ── Toast ────────────────────────────────────────────────
+  function showToast(msg, isError){
+    const t = document.getElementById('dashToast');
+    t.textContent = msg;
+    t.style.background = isError ? 'var(--error)' : 'var(--wood-dark)';
+    t.style.display = 'block';
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(() => t.style.display = 'none', 2600);
+  }
+
+  // ── Stat + tile counts ──────────────────────────────────
+  async function refreshCounts(){
+    try{
+      const [allRes, mineRes, inRes, outRes, borrowedRes] = await Promise.all([
+        fetch('/api/books'),
+        fetch('/api/books?scope=mine'),
+        fetch('/api/requests/incoming'),
+        fetch('/api/requests/outgoing'),
+        fetch('/api/requests/outgoing?status=accepted'),
+      ]);
+      const all = allRes.ok ? await allRes.json() : [];
+      const mine = mineRes.ok ? await mineRes.json() : [];
+      const incoming = (inRes.ok ? await inRes.json() : []).filter(r => r.status === 'pending');
+      const outgoing = outRes.ok ? await outRes.json() : [];
+      const borrowed = borrowedRes.ok ? await borrowedRes.json() : [];
+
+      document.getElementById('statAvailable').textContent = all.length;
+      document.getElementById('statMine').textContent = mine.length;
+      document.getElementById('statIncoming').textContent = incoming.length;
+
+      document.getElementById('countBrowse').textContent = all.length;
+      document.getElementById('countMine').textContent = mine.length;
+      document.getElementById('countIncoming').textContent = incoming.length;
+      document.getElementById('countOutgoing').textContent = outgoing.length;
+      document.getElementById('countBorrowed').textContent = borrowed.length;
+
+      const badge = document.getElementById('cartBadge');
+      badge.textContent = incoming.length;
+      badge.classList.toggle('visible', incoming.length > 0);
+    }catch(e){ /* leave dashes if backend isn't reachable yet */ }
+  }
+
+  // ── My Cart / activity drawer ────────────────────────────
+  const cartBackdrop = document.getElementById('cartBackdrop');
+  const cartActivityList = document.getElementById('cartActivityList');
+
+  function openCartDrawer(){
+    cartBackdrop.classList.add('open');
+    loadMyActivity();
+  }
+  function closeCartDrawer(){
+    cartBackdrop.classList.remove('open');
+  }
+  document.getElementById('myCartBtn').addEventListener('click', openCartDrawer);
+  document.getElementById('cartCloseBtn').addEventListener('click', closeCartDrawer);
+  cartBackdrop.addEventListener('click', (e) => { if(e.target === cartBackdrop) closeCartDrawer(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && cartBackdrop.classList.contains('open')) closeCartDrawer(); });
+
+  const ACTIVITY_ICONS = {
+    listed:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5V6a2.5 2.5 0 012.5-2.5H20v13M4 19.5A2.5 2.5 0 006.5 22H20v-2.5"/></svg>',
+    sent:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+    incoming: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>',
+    accepted: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
+    rejected: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  };
+
+  function timeAgo(iso){
+    if(!iso) return '';
+    const then = new Date(iso).getTime();
+    const diffMin = Math.round((Date.now() - then) / 60000);
+    if(diffMin < 1) return 'just now';
+    if(diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.round(diffMin / 60);
+    if(diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.round(diffHr / 24);
+    if(diffDay < 7) return `${diffDay}d ago`;
+    return new Date(iso).toLocaleDateString();
+  }
+
+  async function loadMyActivity(){
+    cartActivityList.innerHTML = '<div class="cart-empty">Loading your activity…</div>';
+    try{
+      const [mineRes, outRes, inRes] = await Promise.all([
+        fetch('/api/books?scope=mine'),
+        fetch('/api/requests/outgoing'),
+        fetch('/api/requests/incoming'),
+      ]);
+      const mine = mineRes.ok ? await mineRes.json() : [];
+      const outgoing = outRes.ok ? await outRes.json() : [];
+      const incoming = inRes.ok ? await inRes.json() : [];
+
+      const items = [];
+
+      mine.forEach(b => items.push({
+        type:'listed',
+        date: b.created_at,
+        html: `Listed <strong>${b.title}</strong> to ${b.listing_type}`,
+      }));
+
+      outgoing.forEach(r => items.push({
+        type: r.status === 'accepted' ? 'accepted' : (r.status === 'rejected' ? 'rejected' : 'sent'),
+        date: r.created_at,
+        html: r.status === 'pending'
+          ? `Requested <strong>${r.book_title}</strong> — waiting on owner`
+          : r.status === 'accepted'
+            ? `Your request for <strong>${r.book_title}</strong> was accepted`
+            : `Your request for <strong>${r.book_title}</strong> was declined`,
+      }));
+
+      incoming.forEach(r => items.push({
+        type: r.status === 'pending' ? 'incoming' : (r.status === 'accepted' ? 'accepted' : 'rejected'),
+        date: r.created_at,
+        html: r.status === 'pending'
+          ? `<strong>${r.requester_name}</strong> requested your <strong>${r.book_title}</strong>`
+          : r.status === 'accepted'
+            ? `You accepted ${r.requester_name}'s request for <strong>${r.book_title}</strong>`
+            : `You declined ${r.requester_name}'s request for <strong>${r.book_title}</strong>`,
+      }));
+
+      items.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      if(!items.length){
+        cartActivityList.innerHTML = '<div class="cart-empty">No activity yet — list or request a book to see it here.</div>';
+        return;
+      }
+
+      cartActivityList.innerHTML = items.map(item => `
+        <div class="activity-row">
+          <div class="activity-icon ${item.type}">${ACTIVITY_ICONS[item.type] || ACTIVITY_ICONS.listed}</div>
+          <div class="activity-text">
+            <div class="a-title">${item.html}</div>
+            <div class="a-time">${timeAgo(item.date)}</div>
+          </div>
+        </div>
+      `).join('');
+    }catch(e){
+      cartActivityList.innerHTML = '<div class="cart-empty">Couldn\'t load your activity. Try again.</div>';
+    }
+  }
+
+  // ── Books catalog ───────────────────────────────────────
   async function fetchBooks(){
     const params = new URLSearchParams();
-    if(activeTab === 'mine') params.set('scope', 'mine');
+    if(activeTile === 'mine') params.set('scope', 'mine');
     const q = document.getElementById('searchInput').value.trim();
     if(q) params.set('q', q);
-
     try{
       const res = await fetch('/api/books?' + params.toString());
-      if(!res.ok) throw new Error('no /api/books route yet');
+      if(!res.ok) throw new Error();
       books = await res.json();
     }catch(err){
       books = [];
     }
+    if(activeTile === 'browse' && currentUser){
+      books = books.filter(b => b.owner_id !== currentUser.id);
+    }
+    if(activeTypeFilter !== 'all'){
+      books = books.filter(b => b.listing_type === activeTypeFilter);
+    }
     renderCards(books);
   }
 
+  function ownerLineFor(b){
+    const verifiedBadge = b.owner_verified
+      ? ` <span title="Verified student" style="color:var(--moss); font-weight:700;">&#10003;</span>`
+      : '';
+    return `${b.course || ''}<span class="dot-sep"></span>${b.owner || ''}${verifiedBadge}`;
+  }
   function extraLineFor(b){
-    if(b.listing_type === 'sell' && b.price != null){
-      return `<div class="book-extra price">₹${b.price}</div>`;
-    }
-    if(b.listing_type === 'lend' && b.lend_duration){
-      return `<div class="book-extra lend">Lend period: ${b.lend_duration}</div>`;
-    }
-    if(b.listing_type === 'exchange' && b.wants_in_exchange){
-      return `<div class="book-extra exchange">Wants: ${b.wants_in_exchange}</div>`;
-    }
+    if(b.listing_type === 'sell' && b.price != null) return `<div class="book-extra price">₹${b.price}</div>`;
+    if(b.listing_type === 'lend' && b.lend_duration) return `<div class="book-extra lend">Lend period: ${b.lend_duration}</div>`;
+    if(b.listing_type === 'exchange' && b.wants_in_exchange) return `<div class="book-extra exchange">Wants: ${b.wants_in_exchange}</div>`;
     return '';
   }
-
   function tagsFor(b){
     const tags = [];
     if(b.department) tags.push(b.department);
@@ -775,16 +1401,17 @@
     if(!tags.length) return '';
     return `<div class="book-tags">${tags.map(t => `<span class="book-tag">${t}</span>`).join('')}</div>`;
   }
-
   function thumbFor(b){
-    if(b.images && b.images.length){
-      return `<div class="book-thumb"><img src="/uploads/${b.images[0]}" alt="${b.title}"></div>`;
-    }
+    if(b.images && b.images.length) return `<div class="book-thumb"><img src="/uploads/${b.images[0]}" alt="${b.title}"></div>`;
     return `<div class="book-thumb placeholder">No photo yet</div>`;
   }
-
+  function pendingBannerFor(b){
+    if(activeTile === 'mine' && !b.approved) return `<div class="book-extra pending">Pending admin approval — not visible to others yet</div>`;
+    return '';
+  }
   function actionLabelFor(b){
-    if(b.status === 'requested') return 'Notify me';
+    if(b.status === 'requested') return 'Requested';
+    if(b.status === 'unavailable') return 'Unavailable';
     if(b.listing_type === 'sell') return 'Buy';
     if(b.listing_type === 'donate') return 'Claim';
     if(b.listing_type === 'lend') return 'Borrow';
@@ -800,15 +1427,17 @@
       grid.style.display = 'none';
       empty.style.display = 'block';
       document.getElementById('emptyTitle').textContent =
-        activeTab === 'mine' ? "You haven't listed anything yet" : "This drawer's empty";
+        activeTile === 'mine' ? "You haven't listed anything yet" : "This drawer's empty";
       document.getElementById('emptyBody').textContent =
-        activeTab === 'mine' ? "List your first book to see it here." : "No one's listed a book here yet. Be the first.";
+        activeTile === 'mine' ? "List your first book to see it here." : "No one's listed a book here yet. Be the first.";
       return;
     }
     grid.style.display = 'grid';
     empty.style.display = 'none';
 
     list.forEach((b, i) => {
+      const isOwn = currentUser && b.owner_id === currentUser.id;
+      const disabled = isOwn || b.status !== 'available';
       const card = document.createElement('div');
       card.className = 'book-card';
       card.innerHTML = `
@@ -816,47 +1445,191 @@
         ${thumbFor(b)}
         <div class="book-title">${b.title}</div>
         <div class="book-author">${b.author || ''}</div>
-        <div class="book-meta">${b.course || ''}<span class="dot-sep"></span>${b.owner || ''}</div>
+        <div class="book-meta">${ownerLineFor(b)}</div>
         ${tagsFor(b)}
+        ${pendingBannerFor(b)}
         ${extraLineFor(b)}
         <div class="book-card-footer">
           <span class="call-number">#BB-${String(b.id ?? i+1).padStart(3,'0')}</span>
-          <button class="card-action">${actionLabelFor(b)}</button>
+          ${isOwn ? '' : `<button class="card-action" ${disabled ? 'disabled style="color:var(--ink-soft); cursor:default;"' : ''} data-book-id="${b.id}">${actionLabelFor(b)}</button>`}
         </div>
       `;
       grid.appendChild(card);
     });
   }
 
-  // ── Search (debounced, hits the real backend) ───────────────
-  document.getElementById('searchInput').addEventListener('input', () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(fetchBooks, 300);
+  document.getElementById('cardGrid').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.card-action');
+    if(!btn || btn.disabled) return;
+    const bookId = btn.dataset.bookId;
+    if(!bookId) return;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Sending…';
+    try{
+      const res = await fetch(`/api/books/${bookId}/request`, { method:'POST' });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){
+        showToast(data.error || 'Could not send request.', true);
+        btn.disabled = false; btn.textContent = original;
+        return;
+      }
+      showToast('Request sent to the owner!');
+      fetchBooks(); refreshCounts();
+    }catch(err){
+      showToast('Network error — try again.', true);
+      btn.disabled = false; btn.textContent = original;
+    }
   });
 
-  // ── Tabs ─────────────────────────────────────────────────
-  const TAB_COPY = {
-    all:      { heading:"The shelf", sub:"Everything currently available across campus." },
-    mine:     { heading:"My listings", sub:"Books you've put up for lending, exchange, or donation." },
-    borrowed: { heading:"Borrowed", sub:"Books currently checked out to you." },
-    saved:    { heading:"Saved", sub:"Listings you're keeping an eye on." },
-  };
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelector('.tab.active').classList.remove('active');
-      tab.classList.add('active');
-      activeTab = tab.dataset.tab;
-      const copy = TAB_COPY[activeTab];
-      document.getElementById('sectionHeading').textContent = copy.heading;
-      document.getElementById('sectionSub').textContent = copy.sub;
-      // Borrowed/Saved need Requests+Transactions tables (next build phase) —
-      // show an honest empty state instead of faking content until then.
-      if(activeTab === 'all' || activeTab === 'mine'){
-        fetchBooks();
-      } else {
-        renderCards([]);
+  // ── Incoming requests panel ──────────────────────────────
+  async function loadIncomingRequests(){
+    const panel = document.getElementById('requestsPanel');
+    document.getElementById('cardGrid').style.display = 'none';
+    document.getElementById('emptyDrawer').style.display = 'none';
+    panel.style.display = 'block';
+    try{
+      const res = await fetch('/api/requests/incoming');
+      if(!res.ok) throw new Error();
+      const reqs = (await res.json()).filter(r => r.status === 'pending');
+      if(!reqs.length){
+        panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>Nothing waiting</h3><p>No one's requested your books right now.</p></div>`;
+        return;
       }
-    });
+      panel.innerHTML = reqs.map(r => `
+        <div class="request-row">
+          <div style="font-size:13.5px;"><strong>${r.requester_name}</strong> wants your <strong>${r.book_title}</strong> (${r.book_listing_type})</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary" style="padding:6px 14px; font-size:12.5px;" data-req-action="accept" data-req-id="${r.id}">Accept</button>
+            <button class="btn-secondary" style="padding:6px 14px; font-size:12.5px;" data-req-action="reject" data-req-id="${r.id}">Reject</button>
+          </div>
+        </div>
+      `).join('');
+    }catch(e){
+      panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>Couldn't load requests</h3><p>Try refreshing the page.</p></div>`;
+    }
+  }
+
+  document.getElementById('requestsPanel').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-req-action]');
+    if(!btn) return;
+    const action = btn.dataset.reqAction;
+    const reqId = btn.dataset.reqId;
+    btn.disabled = true;
+    try{
+      const res = await fetch(`/api/requests/${reqId}/${action}`, { method:'POST' });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){ showToast(data.error || 'Could not update this request.', true); btn.disabled = false; return; }
+      showToast(action === 'accept' ? "Request accepted — arrange handoff on campus." : 'Request rejected.');
+      loadIncomingRequests(); refreshCounts();
+    }catch(err){
+      showToast('Network error — try again.', true);
+      btn.disabled = false;
+    }
+  });
+
+  // ── Outgoing / borrowed lists ────────────────────────────
+  async function loadOutgoing(){
+    const panel = document.getElementById('requestsPanel');
+    document.getElementById('cardGrid').style.display = 'none';
+    document.getElementById('emptyDrawer').style.display = 'none';
+    panel.style.display = 'block';
+    try{
+      const res = await fetch('/api/requests/outgoing');
+      if(!res.ok) throw new Error();
+      const reqs = await res.json();
+      if(!reqs.length){
+        panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>No requests sent yet</h3><p>Browse the shelf and request a book you need.</p></div>`;
+        return;
+      }
+      const statusLabel = { pending:'Waiting on owner', accepted:'Accepted', rejected:'Declined' };
+      panel.innerHTML = reqs.map(r => `
+        <div class="request-row">
+          <div style="font-size:13.5px;"><strong>${r.book_title}</strong> (${r.book_listing_type})</div>
+          <span class="book-tag">${statusLabel[r.status] || r.status}</span>
+        </div>
+      `).join('');
+    }catch(e){
+      panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>Couldn't load requests</h3><p>Try refreshing the page.</p></div>`;
+    }
+  }
+
+  async function loadBorrowed(){
+    const panel = document.getElementById('requestsPanel');
+    document.getElementById('cardGrid').style.display = 'none';
+    document.getElementById('emptyDrawer').style.display = 'none';
+    panel.style.display = 'block';
+    try{
+      const res = await fetch('/api/requests/outgoing?status=accepted');
+      if(!res.ok) throw new Error();
+      const reqs = await res.json();
+      if(!reqs.length){
+        panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>Nothing here yet</h3><p>You haven't borrowed, bought, claimed, or exchanged anything yet.</p></div>`;
+        return;
+      }
+      panel.innerHTML = `<div class="card-grid">${reqs.map(r => `
+        <div class="book-card">
+          <span class="stamp ${r.book_listing_type}">${r.book_listing_type}</span>
+          <div class="book-title">${r.book_title}</div>
+          <div class="book-meta">Accepted ${r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}</div>
+        </div>
+      `).join('')}</div>`;
+    }catch(e){
+      panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>Couldn't load your books</h3><p>Try refreshing the page.</p></div>`;
+    }
+  }
+
+  // ── Tile switching ───────────────────────────────────────
+  document.getElementById('quickActions').addEventListener('click', (e) => {
+    const tile = e.target.closest('.qa-tile');
+    if(!tile) return;
+    const target = tile.dataset.tile;
+
+    if(target === 'list'){ openModal(); return; }
+
+    document.querySelector('.qa-tile.active')?.classList.remove('active');
+    tile.classList.add('active');
+    activeTile = target;
+
+    const copy = TILE_COPY[target];
+    document.getElementById('sectionHeading').textContent = copy.heading;
+    document.getElementById('sectionSub').textContent = copy.sub;
+    document.getElementById('requestsPanel').style.display = 'none';
+    document.getElementById('cardGrid').style.display = 'grid';
+    document.getElementById('filterPills').style.display = (target === 'browse' || target === 'mine') ? 'flex' : 'none';
+
+    document.getElementById('catalog').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if(target === 'browse' || target === 'mine'){
+      fetchBooks();
+    } else if(target === 'incoming'){
+      loadIncomingRequests();
+    } else if(target === 'outgoing'){
+      loadOutgoing();
+    } else if(target === 'borrowed'){
+      loadBorrowed();
+    }
+  });
+
+  document.getElementById('navBrowse').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelector('[data-tile="browse"]').click();
+  });
+
+  document.getElementById('filterPills').addEventListener('click', (e) => {
+    const pill = e.target.closest('.filter-pill');
+    if(!pill) return;
+    document.querySelector('.filter-pill.active')?.classList.remove('active');
+    pill.classList.add('active');
+    activeTypeFilter = pill.dataset.filter;
+    if(activeTile === 'browse' || activeTile === 'mine') fetchBooks();
+  });
+
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      if(activeTile === 'browse' || activeTile === 'mine') fetchBooks();
+    }, 300);
   });
 
   // ── List a book modal ────────────────────────────────────
@@ -881,37 +1654,25 @@
   }
   function setType(type){
     selectedType = type;
-    document.querySelectorAll('.type-pill').forEach(p => {
-      p.classList.toggle('active', p.dataset.type === type);
-    });
-    document.querySelectorAll('.conditional-field').forEach(f => {
-      f.classList.toggle('visible', f.dataset.for === type);
-    });
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.toggle('active', p.dataset.type === type));
+    document.querySelectorAll('.conditional-field').forEach(f => f.classList.toggle('visible', f.dataset.for === type));
   }
 
-  document.getElementById('listBookBtn').addEventListener('click', openModal);
   document.getElementById('emptyListBtn').addEventListener('click', openModal);
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
   document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
-  modalBackdrop.addEventListener('click', (e) => {
-    if(e.target === modalBackdrop) closeModal();
-  });
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal();
-  });
-
+  modalBackdrop.addEventListener('click', (e) => { if(e.target === modalBackdrop) closeModal(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal(); });
   document.getElementById('typePills').addEventListener('click', (e) => {
     const pill = e.target.closest('.type-pill');
     if(pill) setType(pill.dataset.type);
   });
 
-  // ── Image picker (up to 3 photos) ────────────────────────
   document.getElementById('fImages').addEventListener('change', (e) => {
     const incoming = Array.from(e.target.files || []);
     selectedFiles = [...selectedFiles, ...incoming].slice(0, 3);
     renderImagePreviews();
   });
-
   function renderImagePreviews(){
     const row = document.getElementById('imagePreviewRow');
     row.innerHTML = '';
@@ -929,11 +1690,7 @@
     formError.classList.remove('visible');
 
     const title = document.getElementById('fTitle').value.trim();
-    if(!title){
-      formError.textContent = 'Title is required.';
-      formError.classList.add('visible');
-      return;
-    }
+    if(!title){ formError.textContent = 'Title is required.'; formError.classList.add('visible'); return; }
     if(selectedType === 'sell'){
       const price = document.getElementById('fPrice').value;
       if(price === '' || Number(price) < 0){
@@ -967,7 +1724,9 @@
         return;
       }
       closeModal();
-      if(activeTab === 'all' || activeTab === 'mine') fetchBooks();
+      showToast('Added to the shelf!');
+      refreshCounts();
+      if(activeTile === 'browse' || activeTile === 'mine') fetchBooks();
     }catch(err){
       formError.textContent = 'Could not reach the server. Please try again.';
       formError.classList.add('visible');
@@ -977,8 +1736,12 @@
     }
   });
 
-  loadProfile();
-  fetchBooks();
+  // ── Init ─────────────────────────────────────────────────
+  (async function init(){
+    await loadProfile();
+    refreshCounts();
+    fetchBooks();
+  })();
 </script>
 </body>
 </html>

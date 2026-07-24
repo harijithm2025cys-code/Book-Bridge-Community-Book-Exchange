@@ -17,10 +17,19 @@ from werkzeug.utils import secure_filename
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-from models import db, Student, Book
+from models import db, Student, Book, Request, Transaction
 
 GOOGLE_CLIENT_ID = "95544806282-vqlbvh9p0a1tt8rumqkhuatgb9jksd8q.apps.googleusercontent.com"
 ALLOWED_DOMAIN = "sece.ac.in"
+
+# Any @sece.ac.in account listed here is auto-promoted to admin the moment
+# they sign in. Add your own email (and any teammate emails) before demoing.
+# This only ever ADDS admin rights on sign-in — removing an email here does
+# not revoke admin from someone already promoted; use the admin panel itself
+# (or the DB) for that.
+ADMIN_EMAILS = {
+    "dharshan.s2025cys@sece.ac.in",
+}
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
@@ -53,6 +62,17 @@ def allowed_image(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXT
 
 
+def admin_required():
+    """Returns (student, None) if the current user is an admin,
+    or (None, error_response) if not — caller returns error_response directly."""
+    student = current_student()
+    if not student:
+        return None, (jsonify({"error": "Not signed in."}), 401)
+    if not student.is_admin:
+        return None, (jsonify({"error": "Admin access required."}), 403)
+    return student, None
+
+
 # ── Static pages ──────────────────────────────────────────────────────
 
 @app.route("/")
@@ -65,6 +85,16 @@ def dashboard():
     if not session.get("student_id"):
         return redirect("/")
     return send_from_directory(".", "dashboard.html")
+
+
+@app.route("/admin")
+def admin_page():
+    student = current_student()
+    if not student:
+        return redirect("/")
+    if not student.is_admin:
+        return redirect("/dashboard")
+    return send_from_directory(".", "admin.html")
 
 
 @app.route("/uploads/<path:filename>")
@@ -125,7 +155,16 @@ def auth_google():
         student.picture = payload.get("picture") or student.picture
         student.google_id = google_id
 
+    if email.lower() in {e.lower() for e in ADMIN_EMAILS}:
+        student.is_admin = True
+
     db.session.commit()
+
+    if student.banned:
+        return jsonify({
+            "error": "This account has been banned by an administrator. Contact your BookBridge admin if you think this is a mistake."
+        }), 403
+
     session["student_id"] = student.id
 
     return jsonify({"ok": True})
@@ -185,6 +224,12 @@ def list_books():
         if not student:
             return jsonify({"error": "Not signed in."}), 401
         query = query.filter_by(owner_id=student.id)
+    else:
+        # Donations sit in a pending state until an admin approves them.
+        # Owners can still see their own pending donation; admins see everything.
+        if not (student and student.is_admin):
+            owner_id = student.id if student else -1
+            query = query.filter(db.or_(Book.approved.is_(True), Book.owner_id == owner_id))
 
     q = request.args.get("q", "").strip()
     if q:
@@ -236,6 +281,7 @@ def create_book():
         condition=(form.get("condition") or "").strip(),
         listing_type=listing_type,
         status="available",
+        approved=(listing_type != "donate"),
     )
 
     if listing_type == "sell":
@@ -266,6 +312,227 @@ def create_book():
     db.session.commit()
 
     return jsonify(book.to_dict()), 201
+
+
+# ── Requests (Borrow / Buy / Claim / Propose swap all create a Request) ──
+# This is the "what happens after I click Borrow" flow: a request goes to
+# the owner, who accepts or rejects it. Accepting creates a Transaction and
+# marks the book unavailable to further requests.
+
+@app.route("/api/books/<int:book_id>/request", methods=["POST"])
+def request_book(book_id):
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({"error": "Book not found."}), 404
+    if not book.approved:
+        return jsonify({"error": "This listing isn't live yet."}), 400
+    if book.owner_id == student.id:
+        return jsonify({"error": "You can't request your own listing."}), 400
+    if book.status != "available":
+        return jsonify({"error": "This book is no longer available."}), 400
+
+    existing = Request.query.filter_by(
+        book_id=book.id, requester_id=student.id, status="pending"
+    ).first()
+    if existing:
+        return jsonify({"error": "You've already requested this book."}), 400
+
+    req = Request(book_id=book.id, requester_id=student.id, status="pending")
+    book.status = "requested"
+    db.session.add(req)
+    db.session.commit()
+
+    return jsonify(req.to_dict()), 201
+
+
+@app.route("/api/requests/incoming", methods=["GET"])
+def requests_incoming():
+    """Requests waiting on books the current student owns."""
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    reqs = (
+        Request.query.join(Book, Request.book_id == Book.id)
+        .filter(Book.owner_id == student.id)
+        .order_by(Request.created_at.desc())
+        .all()
+    )
+    return jsonify([r.to_dict() for r in reqs])
+
+
+@app.route("/api/requests/outgoing", methods=["GET"])
+def requests_outgoing():
+    """Requests the current student has made on other students' books."""
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    query = Request.query.filter_by(requester_id=student.id)
+    status_filter = request.args.get("status")
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    reqs = query.order_by(Request.created_at.desc()).all()
+    return jsonify([r.to_dict() for r in reqs])
+
+
+@app.route("/api/requests/<int:request_id>/accept", methods=["POST"])
+def accept_request(request_id):
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    req = Request.query.get(request_id)
+    if not req:
+        return jsonify({"error": "Request not found."}), 404
+    book = req.book
+    if not book or book.owner_id != student.id:
+        return jsonify({"error": "You don't own this listing."}), 403
+    if req.status != "pending":
+        return jsonify({"error": "This request has already been handled."}), 400
+
+    req.status = "accepted"
+    book.status = "unavailable"
+
+    txn = Transaction(book_id=book.id, borrower_id=req.requester_id, owner_id=student.id)
+    db.session.add(txn)
+
+    # Any other pending requests on the same book are now moot.
+    others = Request.query.filter(
+        Request.book_id == book.id, Request.id != req.id, Request.status == "pending"
+    ).all()
+    for other in others:
+        other.status = "rejected"
+
+    db.session.commit()
+    return jsonify(req.to_dict())
+
+
+@app.route("/api/requests/<int:request_id>/reject", methods=["POST"])
+def reject_request(request_id):
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    req = Request.query.get(request_id)
+    if not req:
+        return jsonify({"error": "Request not found."}), 404
+    book = req.book
+    if not book or book.owner_id != student.id:
+        return jsonify({"error": "You don't own this listing."}), 403
+    if req.status != "pending":
+        return jsonify({"error": "This request has already been handled."}), 400
+
+    req.status = "rejected"
+
+    # If no other pending requests remain, the book goes back on the shelf.
+    remaining = Request.query.filter_by(book_id=book.id, status="pending").count()
+    if remaining == 0 and book.status == "requested":
+        book.status = "available"
+
+    db.session.commit()
+    return jsonify(req.to_dict())
+
+
+# ── Admin ─────────────────────────────────────────────────────────────
+# All routes below require the signed-in student to have is_admin = True.
+# Nothing here is reachable by a normal student account.
+
+@app.route("/api/admin/students", methods=["GET"])
+def admin_list_students():
+    _, err = admin_required()
+    if err:
+        return err
+    students = Student.query.order_by(Student.created_at.desc()).all()
+    return jsonify([s.to_dict() for s in students])
+
+
+@app.route("/api/admin/students/<int:student_id>/ban", methods=["POST"])
+def admin_ban_student(student_id):
+    admin, err = admin_required()
+    if err:
+        return err
+    target = Student.query.get(student_id)
+    if not target:
+        return jsonify({"error": "Student not found."}), 404
+    if target.id == admin.id:
+        return jsonify({"error": "You can't ban your own account."}), 400
+
+    data = request.get_json(silent=True) or {}
+    target.banned = bool(data.get("banned", True))
+    db.session.commit()
+    return jsonify(target.to_dict())
+
+
+@app.route("/api/admin/students/<int:student_id>/verify", methods=["POST"])
+def admin_verify_student(student_id):
+    _, err = admin_required()
+    if err:
+        return err
+    target = Student.query.get(student_id)
+    if not target:
+        return jsonify({"error": "Student not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    target.verified = bool(data.get("verified", True))
+    db.session.commit()
+    return jsonify(target.to_dict())
+
+
+@app.route("/api/admin/books", methods=["GET"])
+def admin_list_books():
+    _, err = admin_required()
+    if err:
+        return err
+
+    query = Book.query.order_by(Book.created_at.desc())
+    status_filter = request.args.get("filter")  # "pending" | None
+    if status_filter == "pending":
+        query = query.filter_by(approved=False)
+    return jsonify([b.to_dict() for b in query.all()])
+
+
+@app.route("/api/admin/books/<int:book_id>/approve", methods=["POST"])
+def admin_approve_book(book_id):
+    _, err = admin_required()
+    if err:
+        return err
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({"error": "Book not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    book.approved = bool(data.get("approved", True))
+    db.session.commit()
+    return jsonify(book.to_dict())
+
+
+@app.route("/api/admin/books/<int:book_id>", methods=["DELETE"])
+def admin_delete_book(book_id):
+    _, err = admin_required()
+    if err:
+        return err
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({"error": "Book not found."}), 404
+
+    # Best-effort cleanup of any uploaded images on disk.
+    if book.images:
+        for filename in book.images.split(","):
+            path = os.path.join(UPLOAD_DIR, filename)
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+    db.session.delete(book)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":

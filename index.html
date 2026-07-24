@@ -6,269 +6,319 @@
 <title>BookBridge — Sign in</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
-    --wood-dark:#241a12;
-    --wood:#2e2118;
-    --wood-light:#3c2c1f;
+    --bg:#0c0c0c;
+    --panel:#111111;
+    --line:#2a2a2a;
+    --line-soft:#1c1c1c;
+    --ink:#f2ede3;
+    --ink-soft:#a39a8c;
     --brass:#c08a2e;
     --brass-soft:#e0b563;
-    --paper:#f3ecdd;
-    --paper-line:#e2d6bd;
-    --ink:#241812;
-    --ink-soft:#5c5044;
-    --moss:#4c6444;
-    --error:#a5432f;
+    --moss:#7a9a68;
+    --error:#e08a72;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
     font-family:'Inter', sans-serif;
     min-height:100vh;
-    display:flex;
-    background:var(--wood-dark);
+    background:var(--bg);
     color:var(--ink);
     -webkit-font-smoothing:antialiased;
   }
+  a{ color:var(--brass-soft); text-decoration:none; }
+  :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+
   .stage{
-    display:flex;
-    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
     min-height:100vh;
+    gap:0;
   }
 
-  /* LEFT — wood panel */
+  /* ══════════════════ LEFT — sign-in ══════════════════ */
   .panel-left{
-    flex:1.1;
-    background:
-      radial-gradient(ellipse at 20% -10%, rgba(192,138,46,0.14), transparent 55%),
-      linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
-    color:var(--paper);
-    padding:64px 56px;
     display:flex;
     flex-direction:column;
     justify-content:space-between;
-    position:relative;
-    overflow:hidden;
+    padding:44px 56px 40px;
   }
   .brand{
     font-family:'Fraunces', serif;
-    font-weight:700;
-    font-size:28px;
-    letter-spacing:-0.01em;
+    font-weight:600;
+    font-size:19px;
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:9px;
+    letter-spacing:-0.01em;
   }
-  .brand .dot{
-    width:8px; height:8px; border-radius:50%;
-    background:var(--brass);
-    display:inline-block;
+  .brand .mark{
+    width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
   }
-  .tagline-block{
-    max-width:420px;
+  .brand .mark svg{ width:100%; height:100%; }
+
+  .hero-copy{
+    max-width:460px;
+    margin-top:auto;
+    margin-bottom:auto;
+    padding:64px 0;
   }
   .eyebrow{
     font-family:'JetBrains Mono', monospace;
-    font-size:12px;
-    letter-spacing:0.14em;
+    font-size:11.5px;
+    letter-spacing:0.16em;
     text-transform:uppercase;
     color:var(--brass-soft);
-    margin-bottom:18px;
+    margin-bottom:20px;
   }
   h1{
     font-family:'Fraunces', serif;
-    font-weight:600;
-    font-size:44px;
-    line-height:1.12;
-    letter-spacing:-0.01em;
+    font-weight:500;
+    font-size:52px;
+    line-height:1.08;
+    letter-spacing:-0.015em;
     margin-bottom:20px;
-  }
-  .sub{
-    font-size:15.5px;
-    line-height:1.6;
-    color:#d8cbb0;
-  }
-
-  /* shelf illustration */
-  .shelf{
-    display:flex;
-    align-items:flex-end;
-    gap:6px;
-    height:120px;
-    margin-top:48px;
-  }
-  .spine{
-    width:26px;
-    border-radius:3px 3px 0 0;
-    transition:transform .25s ease;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
-  }
-  .spine:hover{ transform:translateY(-8px) rotate(-1deg); }
-  .shelf-line{
-    position:absolute;
-    left:56px; right:56px;
-    height:3px;
-    background:linear-gradient(90deg, transparent, var(--brass) 15%, var(--brass) 85%, transparent);
-    opacity:0.5;
-  }
-
-  .footnote-left{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11.5px;
-    color:#8a7a63;
-    letter-spacing:0.02em;
-  }
-
-  /* RIGHT — paper panel */
-  .panel-right{
-    flex:1;
-    background:var(--paper);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:40px;
-  }
-  .card{
-    width:100%;
-    max-width:380px;
-  }
-  .card-eyebrow{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11.5px;
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    color:var(--ink-soft);
-    margin-bottom:10px;
-  }
-  .card h2{
-    font-family:'Fraunces', serif;
-    font-weight:600;
-    font-size:28px;
-    margin-bottom:10px;
     color:var(--ink);
   }
-  .card p.desc{
-    font-size:14.5px;
-    color:var(--ink-soft);
-    line-height:1.55;
-    margin-bottom:28px;
+  h1 em{ font-style:italic; color:var(--brass-soft); }
+  .sub{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:16.5px;
+    color:#b8ab94;
+    line-height:1.5;
   }
 
+  .auth-card{
+    max-width:400px;
+    margin-top:44px;
+  }
   .domain-chip{
     display:inline-flex;
     align-items:center;
     gap:8px;
     font-family:'JetBrains Mono', monospace;
-    font-size:12.5px;
-    background:#fff;
-    border:1px solid var(--paper-line);
-    padding:7px 12px;
-    border-radius:20px;
+    font-size:12px;
     color:var(--moss);
-    margin-bottom:28px;
+    border:1px solid #2a3324;
+    background:#141a10;
+    padding:6px 12px;
+    border-radius:20px;
+    margin-bottom:22px;
   }
-  .domain-chip svg{ width:13px; height:13px; flex-shrink:0; }
+  .domain-chip svg{ width:12px; height:12px; flex-shrink:0; }
 
   #googleBtnContainer{
     display:flex;
-    justify-content:center;
+    justify-content:flex-start;
     margin-bottom:16px;
     min-height:44px;
   }
 
   .status{
-    font-size:13.5px;
-    padding:12px 14px;
+    font-size:13px;
+    padding:11px 13px;
     border-radius:8px;
     line-height:1.5;
     display:none;
+    margin-bottom:16px;
   }
-  .status.error{
-    display:block;
-    background:#fbeae5;
-    color:var(--error);
-    border:1px solid #f1c9bd;
-  }
-  .status.success{
-    display:block;
-    background:#eaf0e6;
-    color:var(--moss);
-    border:1px solid #cfe0c6;
-  }
-  .status.loading{
-    display:block;
-    background:#f5f0e3;
-    color:var(--ink-soft);
-    border:1px solid var(--paper-line);
-  }
+  .status.error{ display:block; background:#241512; color:var(--error); border:1px solid #40241f; }
+  .status.success{ display:block; background:#131f13; color:var(--moss); border:1px solid #26361f; }
+  .status.loading{ display:block; background:#161616; color:var(--ink-soft); border:1px solid var(--line); }
 
-  .divider{
-    border:0;
-    border-top:1px solid var(--paper-line);
-    margin:28px 0 20px;
-  }
   .fine-print{
     font-size:12px;
-    color:#8a7a63;
-    line-height:1.6;
+    color:#726957;
+    line-height:1.65;
+    max-width:380px;
+  }
+  .fine-print strong{ color:#9a8f7a; }
+
+  .footnote-left{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:#5c5546;
+    letter-spacing:0.02em;
   }
 
-  @media (max-width:840px){
-    .stage{ flex-direction:column; }
-    .panel-left{ padding:40px 32px; }
-    h1{ font-size:32px; }
-    .shelf{ height:70px; }
-    .panel-right{ padding:32px; }
+  /* ══════════════════ RIGHT — shelf collage ══════════════════ */
+  .panel-right{
+    position:relative;
+    padding:18px 18px 18px 0;
+  }
+  .collage{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:14px;
+    overflow:hidden;
+    background:
+      radial-gradient(ellipse at 75% 0%, rgba(192,138,46,0.14), transparent 55%),
+      linear-gradient(160deg, #2e2118 0%, #1a130d 60%, #100b07 100%);
+  }
+  .collage-inner{
+    position:absolute; inset:0;
+    display:flex;
+    align-items:flex-end;
+    padding:56px;
+  }
+  .desk{
+    width:100%;
+  }
+  .desk-row{
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    height:min(46vh, 360px);
+    margin-bottom:26px;
+  }
+  .desk-row .spine{
+    border-radius:5px 5px 2px 2px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2), 0 10px 24px rgba(0,0,0,0.35);
+    position:relative;
+    flex-shrink:0;
+    transition:transform .3s ease;
+  }
+  .desk-row .spine:hover{ transform:translateY(-10px); }
+  .desk-row .spine .label{
+    position:absolute;
+    bottom:14px; left:50%;
+    transform:translateX(-50%) rotate(-90deg);
+    transform-origin:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:0.05em;
+    color:rgba(255,255,255,0.55);
+    white-space:nowrap;
   }
 
-  a{ color:var(--brass); }
-  :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+  .note-cluster{
+    position:absolute;
+    top:48px; right:56px;
+    display:flex;
+    gap:14px;
+  }
+  .sticky{
+    width:96px; height:96px;
+    border-radius:2px;
+    padding:12px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    line-height:1.5;
+    color:#3a3226;
+    box-shadow:0 10px 20px rgba(0,0,0,0.35);
+    transform:rotate(var(--r,0deg));
+  }
+  .sticky:nth-child(1){ background:#e8d9a8; --r:-4deg; }
+  .sticky:nth-child(2){ background:#d8e0c4; --r:3deg; margin-top:18px;}
+  .sticky:nth-child(3){ background:#e3c9c0; --r:-2deg; }
+
+  .call-slip{
+    position:absolute;
+    bottom:56px; right:56px;
+    width:172px;
+    background:#efe4cc;
+    color:#3a3226;
+    padding:14px 16px;
+    border-radius:2px;
+    box-shadow:0 14px 28px rgba(0,0,0,0.4);
+    transform:rotate(2deg);
+    font-family:'JetBrains Mono', monospace;
+  }
+  .call-slip .cs-title{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.08em; color:#8a5f16; margin-bottom:8px; }
+  .call-slip .cs-line{ font-size:10.5px; border-top:1px dashed #c8b98c; padding-top:6px; margin-top:6px; color:#5c5044; }
+
+  .shelf-line{
+    position:absolute;
+    left:56px; right:56px; bottom:20px;
+    height:14px;
+    background:linear-gradient(180deg, #4a3120, #241a12);
+    border-radius:2px;
+    box-shadow:0 8px 18px rgba(0,0,0,0.45);
+  }
+
+  /* ══════════════════ RESPONSIVE ══════════════════ */
+  @media (max-width:980px){
+    .stage{ grid-template-columns:1fr; }
+    .panel-right{ display:none; }
+    .panel-left{ padding:32px 24px; }
+    h1{ font-size:38px; }
+    .hero-copy{ padding:36px 0; }
+  }
 </style>
 </head>
 <body>
 <div class="stage">
 
   <div class="panel-left">
-    <div class="brand"><span class="dot"></span>BookBridge</div>
+    <div class="brand">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 5.5A2.5 2.5 0 016.5 3H20v15.5H6.5A2.5 2.5 0 004 20.5v-15z" stroke="#c08a2e" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M4 20.5A2.5 2.5 0 016.5 18H20" stroke="#c08a2e" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      BookBridge
+    </div>
 
-    <div class="tagline-block">
+    <div class="hero-copy">
       <div class="eyebrow">SECE Campus Exchange</div>
-      <h1>Every unused textbook<br>is someone else's semester.</h1>
-      <p class="sub">Lend, borrow, exchange, or donate study materials with students across your campus — no more paying full price for a book that's used once a year.</p>
+      <h1>Question what's<br>on your <em>shelf</em>.</h1>
+      <p class="sub">Lend, borrow, exchange, or donate study materials with students across your campus.</p>
 
-      <div class="shelf" aria-hidden="true">
-        <div class="spine" style="height:78%; background:#7a3b2e;"></div>
-        <div class="spine" style="height:95%; background:#c08a2e;"></div>
-        <div class="spine" style="height:65%; background:#4c6444;"></div>
-        <div class="spine" style="height:88%; background:#3c5a73;"></div>
-        <div class="spine" style="height:72%; background:#8a5a3c;"></div>
-        <div class="spine" style="height:100%; background:#9a4a3f;"></div>
-        <div class="spine" style="height:60%; background:#c08a2e;"></div>
-        <div class="spine" style="height:82%; background:#4c6444;"></div>
+      <div class="auth-card">
+        <div class="domain-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          Restricted to @sece.ac.in
+        </div>
+
+        <div id="googleBtnContainer"></div>
+
+        <div id="status" class="status"></div>
+
+        <p class="fine-print">By continuing you agree that your name, college email, and profile photo will be visible to other verified SECE students. If your Google account isn't a <strong>@sece.ac.in</strong> address, sign-in will be blocked.</p>
       </div>
     </div>
 
     <div class="footnote-left">PS-13 &middot; Codeisnomini Hackathon</div>
   </div>
 
-  <div class="panel-right">
-    <div class="card">
-      <div class="card-eyebrow">Sign in</div>
-      <h2>Welcome to BookBridge</h2>
-      <p class="desc">Access is limited to verified college accounts, so every listing on the shelf is from someone you actually go to class with.</p>
-
-      <div class="domain-chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-        Restricted to @sece.ac.in
+  <div class="panel-right" aria-hidden="true">
+    <div class="collage">
+      <div class="note-cluster">
+        <div class="sticky">need to return DBMS book by fri</div>
+        <div class="sticky">EC204 — anyone selling?</div>
+        <div class="sticky">swap: Mano for Kurose</div>
       </div>
 
-      <div id="googleBtnContainer"></div>
+      <div class="call-slip">
+        <div class="cs-title">Call slip</div>
+        <div>Digital Logic Design</div>
+        <div class="cs-line">#BB-014 · Lend · 2 weeks</div>
+      </div>
 
-      <div id="status" class="status"></div>
-
-      <hr class="divider">
-      <p class="fine-print">By continuing you agree that your name, college email, and profile photo will be visible to other verified SECE students on the platform. If your Google account isn't a <strong>@sece.ac.in</strong> address, sign-in will be blocked.</p>
+      <div class="collage-inner">
+        <div class="desk">
+          <div class="desk-row">
+            <div class="spine" style="width:34px; height:82%; background:#7a3b2e;"><span class="label">MANO</span></div>
+            <div class="spine" style="width:30px; height:96%; background:#c08a2e;"><span class="label">KUROSE</span></div>
+            <div class="spine" style="width:38px; height:68%; background:#4c6444;"><span class="label">SEDGEWICK</span></div>
+            <div class="spine" style="width:32px; height:90%; background:#3c5a73;"><span class="label">STRANG</span></div>
+            <div class="spine" style="width:36px; height:75%; background:#8a5a3c;"><span class="label">HALLIDAY</span></div>
+            <div class="spine" style="width:30px; height:100%; background:#9a4a3f;"><span class="label">TANENBAUM</span></div>
+            <div class="spine" style="width:34px; height:63%; background:#c08a2e;"><span class="label">SILBERSCHATZ</span></div>
+            <div class="spine" style="width:30px; height:85%; background:#4c6444;"><span class="label">HORSTMANN</span></div>
+            <div class="spine" style="width:36px; height:70%; background:#6a4e78;"><span class="label">CORMEN</span></div>
+          </div>
+          <div class="shelf-line"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -276,14 +326,9 @@
 
 <script>
   // ── CONFIG ──────────────────────────────────────────────────────────
-  // 1. Create a project + OAuth Client ID (Web application) in Google Cloud Console.
-  // 2. Paste that client ID below.
-  // 3. Add your dev URL (e.g. http://localhost:3000) and prod URL to
-  //    "Authorized JavaScript origins" for that client ID.
   const GOOGLE_CLIENT_ID = "95544806282-vqlbvh9p0a1tt8rumqkhuatgb9jksd8q.apps.googleusercontent.com";
   const ALLOWED_DOMAIN = "sece.ac.in";
-  // Point this at your backend (see server.js) for real verification.
-  const VERIFY_ENDPOINT = "/api/auth/google"; 
+  const VERIFY_ENDPOINT = "/api/auth/google";
   // ────────────────────────────────────────────────────────────────────
 
   const statusEl = document.getElementById('status');
@@ -313,11 +358,9 @@
       return;
     }
 
-    // Quick client-side check (fast feedback only — NOT the real security boundary)
     const emailDomain = (payload.email || '').split('@')[1] || '';
     if(emailDomain.toLowerCase() !== ALLOWED_DOMAIN){
       showStatus('error', `Access is limited to @${ALLOWED_DOMAIN} accounts. You signed in with ${payload.email || 'an unrecognized account'}.`);
-      // Also revoke so the picker doesn't just re-suggest this account silently.
       if(window.google) google.accounts.id.disableAutoSelect();
       return;
     }
@@ -328,7 +371,6 @@
 
     showStatus('loading', 'Verifying your account…');
 
-    // Send the raw ID token to the backend for real verification + session creation.
     try{
       const res = await fetch(VERIFY_ENDPOINT, {
         method:'POST',
@@ -346,7 +388,6 @@
       setTimeout(() => { window.location.href = '/dashboard'; }, 900);
 
     }catch(err){
-      // Backend not running yet (e.g. during frontend-only dev/demo).
       showStatus('success', `Welcome, ${payload.name || payload.email}! (Demo mode — no backend connected yet.)`);
     }
   }
@@ -359,11 +400,11 @@
     google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: handleCredentialResponse,
-      hd: ALLOWED_DOMAIN // hints Google to only list this domain's accounts
+      hd: ALLOWED_DOMAIN
     });
     google.accounts.id.renderButton(
       document.getElementById('googleBtnContainer'),
-      { theme:'outline', size:'large', shape:'pill', text:'signin_with', width:320 }
+      { theme:'filled_black', size:'large', shape:'pill', text:'signin_with', width:340 }
     );
   };
 </script>
