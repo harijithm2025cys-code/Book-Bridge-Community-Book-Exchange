@@ -1,23 +1,25 @@
 # server.py
 # Flask backend for BookBridge.
-# Now backed by a real SQLite database (via flask-sqlalchemy) instead of
-# the Flask session / in-memory JS array. See models.py for the schema.
 #
-# Setup:
-#   pip install flask flask-sqlalchemy google-auth requests
-#   python server.py
-#
-# First run creates bookbridge.db (SQLite file) and an /uploads folder
-# in this same directory automatically.
+# CHANGELOG (score system):
+#   - POINT_RULES + award_points() implement the BookBridge Score System.
+#   - Hooked into: account registration, uploading a book, a donation being
+#     approved, a request being accepted (borrow +5 / lend +30), request
+#     cancellation (repeated -10).
+#   - New routes for actions that had no existing flow to hang off of:
+#     returning a book (on-time/late/damaged), reviewing another student,
+#     verifying a received book's details, inviting a friend, and reading
+#     your own score / the leaderboard.
 
 import os
 import time
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, session, send_from_directory, redirect
 from werkzeug.utils import secure_filename
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-from models import db, Student, Book, Request, Transaction
+from models import db, Student, Book, Request, Transaction, Review, ScoreEvent
 
 GOOGLE_CLIENT_ID = "95544806282-vqlbvh9p0a1tt8rumqkhuatgb9jksd8q.apps.googleusercontent.com"
 ALLOWED_DOMAIN = "sece.ac.in"
@@ -30,6 +32,26 @@ ALLOWED_DOMAIN = "sece.ac.in"
 ADMIN_EMAILS = {
     "dharshan.s2025cys@sece.ac.in",
 }
+
+# ── BookBridge Score System ──────────────────────────────────────────
+# Single source of truth for point values. Keep the frontend's own copy
+# (if any) in sync with this, or better, fetch it from /api/scores/rules.
+POINT_RULES = {
+    "register":            10,
+    "upload_book":         20,
+    "donate_book":         50,
+    "lend_book":            30,
+    "return_on_time":       20,
+    "borrow_book":           5,
+    "give_review":          10,
+    "verify_book_details":   5,
+    "invite_friend":        15,
+    "late_return":         -20,
+    "damaged_book":        -50,
+    "cancel_request":      -10,
+}
+
+LATE_RETURN_GRACE = timedelta(hours=0)  # room to add slack later if you want it
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
@@ -71,6 +93,20 @@ def admin_required():
     if not student.is_admin:
         return None, (jsonify({"error": "Admin access required."}), 403)
     return student, None
+
+
+def award_points(student, action, note=None):
+    """Applies a POINT_RULES action to a student, logs a ScoreEvent, and
+    updates their running total. Does NOT commit — caller should commit
+    (usually alongside whatever else it's already saving) so the score
+    change is atomic with the action that triggered it."""
+    if student is None or action not in POINT_RULES:
+        return None
+    points = POINT_RULES[action]
+    student.score = (student.score or 0) + points
+    event = ScoreEvent(student_id=student.id, action=action, points=points, note=note)
+    db.session.add(event)
+    return event
 
 
 # ── Static pages ──────────────────────────────────────────────────────
@@ -139,6 +175,8 @@ def auth_google():
         # (shouldn't normally happen, but keeps email unique constraint safe).
         student = Student.query.filter_by(email=email).first()
 
+    is_new_student = student is None
+
     if student is None:
         student = Student(
             google_id=google_id,
@@ -148,6 +186,7 @@ def auth_google():
             picture=payload.get("picture"),
         )
         db.session.add(student)
+        db.session.flush()  # get student.id before we log a ScoreEvent against it
     else:
         # Keep verified identity fields fresh; display_name stays as
         # whatever the student customized it to.
@@ -157,6 +196,9 @@ def auth_google():
 
     if email.lower() in {e.lower() for e in ADMIN_EMAILS}:
         student.is_admin = True
+
+    if is_new_student:
+        award_points(student, "register", note="Account created")
 
     db.session.commit()
 
@@ -309,6 +351,13 @@ def create_book():
         book.images = ",".join(saved_filenames)
 
     db.session.add(book)
+
+    # Donations earn their (bigger) bonus once approved, not on upload —
+    # see admin_approve_book(). Every other listing type earns the flat
+    # upload bonus right away.
+    if listing_type != "donate":
+        award_points(student, "upload_book", note=f'Listed "{title}"')
+
     db.session.commit()
 
     return jsonify(book.to_dict()), 201
@@ -398,8 +447,25 @@ def accept_request(request_id):
     req.status = "accepted"
     book.status = "unavailable"
 
-    txn = Transaction(book_id=book.id, borrower_id=req.requester_id, owner_id=student.id)
+    due_date = None
+    if book.listing_type == "lend":
+        due_date = datetime.utcnow() + timedelta(days=14)  # default 2-week loan
+
+    txn = Transaction(
+        book_id=book.id,
+        borrower_id=req.requester_id,
+        owner_id=student.id,
+        due_date=due_date,
+    )
     db.session.add(txn)
+
+    # Score: the borrower always earns the flat "borrow" points; the owner
+    # additionally earns the bigger "lend" bonus specifically for lend-type
+    # listings (selling/donating/exchanging aren't "lending").
+    borrower = Student.query.get(req.requester_id)
+    award_points(borrower, "borrow_book", note=f'Borrowed "{book.title}"')
+    if book.listing_type == "lend":
+        award_points(student, "lend_book", note=f'Lent out "{book.title}"')
 
     # Any other pending requests on the same book are now moot.
     others = Request.query.filter(
@@ -436,6 +502,233 @@ def reject_request(request_id):
 
     db.session.commit()
     return jsonify(req.to_dict())
+
+
+@app.route("/api/requests/<int:request_id>/cancel", methods=["POST"])
+def cancel_request(request_id):
+    """A requester backing out of their own pending request. The first
+    cancellation is free; from the 2nd one onward it's treated as
+    'repeatedly' cancelling and costs points, per the score rules."""
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    req = Request.query.get(request_id)
+    if not req:
+        return jsonify({"error": "Request not found."}), 404
+    if req.requester_id != student.id:
+        return jsonify({"error": "This isn't your request."}), 403
+    if req.status != "pending":
+        return jsonify({"error": "This request has already been handled."}), 400
+
+    req.status = "cancelled"
+    book = req.book
+    if book:
+        remaining = Request.query.filter(
+            Request.book_id == book.id, Request.id != req.id, Request.status == "pending"
+        ).count()
+        if remaining == 0 and book.status == "requested":
+            book.status = "available"
+
+    student.cancel_count = (student.cancel_count or 0) + 1
+    if student.cancel_count > 1:
+        award_points(student, "cancel_request", note=f"Cancelled request #{req.id}")
+
+    db.session.commit()
+    return jsonify(req.to_dict())
+
+
+# ── Transactions (return / verify) ──────────────────────────────────────
+
+@app.route("/api/transactions/<int:txn_id>/return", methods=["POST"])
+def return_transaction(txn_id):
+    """Marks a lent book as returned. Awards the borrower on-time points,
+    or deducts late/damaged points, based on due_date and the optional
+    `damaged` flag. Either the owner or the borrower can record a return
+    (in practice this'll usually be the owner confirming they got it back)."""
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    txn = Transaction.query.get(txn_id)
+    if not txn:
+        return jsonify({"error": "Transaction not found."}), 404
+    if student.id not in (txn.owner_id, txn.borrower_id):
+        return jsonify({"error": "You're not part of this transaction."}), 403
+    if txn.returned:
+        return jsonify({"error": "This has already been marked returned."}), 400
+
+    data = request.get_json(silent=True) or {}
+    damaged = bool(data.get("damaged", False))
+
+    txn.returned = True
+    txn.returned_at = datetime.utcnow()
+    txn.damaged = damaged
+
+    borrower = Student.query.get(txn.borrower_id)
+
+    if damaged:
+        award_points(borrower, "damaged_book", note=f"Transaction #{txn.id} returned damaged")
+    elif txn.due_date and txn.returned_at > txn.due_date + LATE_RETURN_GRACE:
+        award_points(borrower, "late_return", note=f"Transaction #{txn.id} returned late")
+    else:
+        award_points(borrower, "return_on_time", note=f"Transaction #{txn.id} returned on time")
+
+    book = txn.book
+    if book and book.status == "unavailable":
+        book.status = "available"
+
+    db.session.commit()
+    return jsonify(txn.to_dict())
+
+
+@app.route("/api/transactions/<int:txn_id>/verify", methods=["POST"])
+def verify_transaction(txn_id):
+    """Borrower confirms the book they received matched its listed
+    condition/details. Small trust-building bonus."""
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    txn = Transaction.query.get(txn_id)
+    if not txn:
+        return jsonify({"error": "Transaction not found."}), 404
+    if txn.borrower_id != student.id:
+        return jsonify({"error": "Only the borrower can verify this transaction."}), 403
+    if txn.verified:
+        return jsonify({"error": "Already verified."}), 400
+
+    txn.verified = True
+    award_points(student, "verify_book_details", note=f"Verified transaction #{txn.id}")
+    db.session.commit()
+    return jsonify(txn.to_dict())
+
+
+# ── Reviews ──────────────────────────────────────────────────────────────
+
+@app.route("/api/reviews", methods=["POST"])
+def create_review():
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    data = request.get_json(silent=True) or {}
+    target_id = data.get("student_id")
+    rating = data.get("rating")
+    comment = (data.get("comment") or "").strip()
+    transaction_id = data.get("transaction_id")
+
+    target = Student.query.get(target_id) if target_id else None
+    if not target:
+        return jsonify({"error": "That student doesn't exist."}), 404
+    if target.id == student.id:
+        return jsonify({"error": "You can't review yourself."}), 400
+    try:
+        rating = int(rating)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Rating must be a number from 1-5."}), 400
+    if rating < 1 or rating > 5:
+        return jsonify({"error": "Rating must be between 1 and 5."}), 400
+
+    if transaction_id:
+        txn = Transaction.query.get(transaction_id)
+        if not txn or student.id not in (txn.owner_id, txn.borrower_id):
+            return jsonify({"error": "That transaction doesn't involve you."}), 403
+        existing = Review.query.filter_by(transaction_id=transaction_id, reviewer_id=student.id).first()
+        if existing:
+            return jsonify({"error": "You've already reviewed this transaction."}), 400
+
+    review = Review(
+        student_id=target.id,
+        reviewer_id=student.id,
+        transaction_id=transaction_id,
+        rating=rating,
+        comment=comment,
+    )
+    db.session.add(review)
+
+    # Keep the target's average rating fresh.
+    all_ratings = [r.rating for r in Review.query.filter_by(student_id=target.id).all() if r.rating]
+    all_ratings.append(rating)
+    target.rating = round(sum(all_ratings) / len(all_ratings), 2)
+
+    award_points(student, "give_review", note=f"Reviewed {target.display_name}")
+    db.session.commit()
+    return jsonify(review.to_dict()), 201
+
+
+# ── Invite a friend (stub) ────────────────────────────────────────────
+# NOTE: there's no invite-tracking infrastructure yet (no invite codes,
+# no verification the invitee actually joins). This awards points as soon
+# as the current student says they've invited someone, which is
+# honor-system only — replace with real verification (e.g. award points
+# when the invitee's account is created and references an inviter id)
+# before relying on this for anything that matters.
+@app.route("/api/invite", methods=["POST"])
+def invite_friend():
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    data = request.get_json(silent=True) or {}
+    invitee_email = (data.get("email") or "").strip()
+    if not invitee_email:
+        return jsonify({"error": "Enter the email you invited."}), 400
+
+    award_points(student, "invite_friend", note=f"Invited {invitee_email}")
+    db.session.commit()
+    return jsonify({"ok": True, "score": student.score})
+
+
+# ── Scores ─────────────────────────────────────────────────────────────
+
+@app.route("/api/scores/rules", methods=["GET"])
+def score_rules():
+    return jsonify(POINT_RULES)
+
+
+@app.route("/api/scores/me", methods=["GET"])
+def score_me():
+    student = current_student()
+    if not student:
+        return jsonify({"error": "Not signed in."}), 401
+
+    events = (
+        ScoreEvent.query.filter_by(student_id=student.id)
+        .order_by(ScoreEvent.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    rank = Student.query.filter(Student.score > student.score).count() + 1
+
+    return jsonify({
+        "score": student.score,
+        "badge": student.badge_name(),
+        "rank": rank,
+        "history": [e.to_dict() for e in events],
+    })
+
+
+@app.route("/api/scores/leaderboard", methods=["GET"])
+def score_leaderboard():
+    limit = min(int(request.args.get("limit", 20)), 100)
+    top = (
+        Student.query.filter_by(banned=False)
+        .order_by(Student.score.desc())
+        .limit(limit)
+        .all()
+    )
+    return jsonify([
+        {
+            "id": s.id,
+            "display_name": s.display_name,
+            "picture": s.picture,
+            "score": s.score,
+            "badge": s.badge_name(),
+            "verified": s.verified,
+        }
+        for s in top
+    ])
 
 
 # ── Admin ─────────────────────────────────────────────────────────────
@@ -506,7 +799,16 @@ def admin_approve_book(book_id):
         return jsonify({"error": "Book not found."}), 404
 
     data = request.get_json(silent=True) or {}
-    book.approved = bool(data.get("approved", True))
+    newly_approved = bool(data.get("approved", True))
+    book.approved = newly_approved
+
+    # Donation bonus fires the first time a donation listing goes live,
+    # not on every approve/hide toggle.
+    if newly_approved and book.listing_type == "donate" and not book.donate_bonus_awarded:
+        owner = Student.query.get(book.owner_id)
+        award_points(owner, "donate_book", note=f'Donation approved: "{book.title}"')
+        book.donate_bonus_awarded = True
+
     db.session.commit()
     return jsonify(book.to_dict())
 

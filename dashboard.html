@@ -187,6 +187,9 @@
     color:#a99a82;
     margin-top:1px;
   }
+  .profile-name .edit-hint.has-score{
+    color:var(--brass-soft);
+  }
 
   /* ══════════════════════ HERO ══════════════════════ */
   .hero{
@@ -238,6 +241,7 @@
     color:var(--brass-soft);
     line-height:1;
   }
+  .hero-stat.score .num{ color:#f0d9a0; }
   .hero-stat .label{
     font-family:'JetBrains Mono', monospace;
     font-size:10.5px;
@@ -310,6 +314,7 @@
   .qa-tile[data-tile="incoming"] .qa-icon{ background:#f4e6e0; color:#7a3324; }
   .qa-tile[data-tile="outgoing"] .qa-icon{ background:#efe6d1; color:#6b5730; }
   .qa-tile[data-tile="borrowed"] .qa-icon{ background:#e9e3f0; color:#5a4a7a; }
+  .qa-tile[data-tile="leaderboard"] .qa-icon{ background:#f6ecd8; color:#8a5f16; }
 
   .qa-title{
     font-family:'Fraunces', serif;
@@ -624,6 +629,7 @@
   .activity-icon.incoming{ background:#f4e6e0; color:#7a3324; }
   .activity-icon.accepted{ background:var(--moss-soft); color:var(--moss); }
   .activity-icon.rejected{ background:var(--error-soft); color:var(--error); }
+  .activity-icon.score{ background:#f0e2c0; color:#8a5f16; }
   .activity-text{ flex:1; min-width:0; }
   .activity-text .a-title{ font-size:13px; color:var(--ink); line-height:1.4; }
   .activity-text .a-title strong{ font-weight:600; }
@@ -747,6 +753,7 @@
     box-shadow:0 8px 24px rgba(0,0,0,0.25);
     display:none; z-index:100;
   }
+  .toast.points{ background:#8a5f16; }
 
   /* ══════════════ COMMUNITY GUIDELINES PLAQUE ══════════════
      Same signature element as the login page — keeps the two
@@ -835,11 +842,50 @@
     line-height:1.5;
   }
 
+  /* ══════════════ SCORE GUIDE PLAQUE ══════════════
+     Same plaque vocabulary as the guidelines section, so the
+     scoring rules read as part of the same "posted notice"
+     system rather than a bolted-on feature.
+  ─────────────────────────────────────────────────────────── */
+  .score-wrap{ margin-bottom:44px; }
+  .score-rule-grid{
+    list-style:none;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px 20px;
+  }
+  .score-rule-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    background:var(--paper);
+    border:1px solid var(--paper-line);
+    border-radius:5px;
+  }
+  .score-rule-item .sr-label{
+    font-size:12.5px;
+    color:var(--ink);
+    font-weight:500;
+  }
+  .score-rule-item .sr-points{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:600;
+    padding:2px 8px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+  .score-rule-item .sr-points.positive{ color:var(--moss); background:var(--moss-soft); }
+  .score-rule-item .sr-points.negative{ color:var(--error); background:var(--error-soft); }
+
   @media (max-width:900px){
     .quick-actions{ grid-template-columns:repeat(2, 1fr); }
     .rule-grid{ grid-template-columns:1fr; }
     .rule-grid .rule-item:nth-last-child(-n+2){ border-bottom:1px dashed var(--paper-line); }
     .rule-grid .rule-item:last-child{ border-bottom:none; }
+    .score-rule-grid{ grid-template-columns:1fr 1fr; }
   }
   @media (max-width:720px){
     header{ padding:14px 18px; gap:12px; flex-wrap:wrap; }
@@ -852,6 +898,7 @@
     main{ padding:0 18px 40px; }
     .quick-actions{ grid-template-columns:1fr; margin-top:-24px; }
     .field-row{ grid-template-columns:1fr; }
+    .score-rule-grid{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -880,7 +927,7 @@
     <div class="avatar" id="avatarEl">?</div>
     <div class="profile-name">
       <span id="displayNameEl">Loading…</span>
-      <span class="edit-hint">tap to rename</span>
+      <span class="edit-hint" id="scoreHint">tap to rename</span>
     </div>
   </div>
   <button class="logout-btn" id="logoutBtn">Log out</button>
@@ -897,6 +944,7 @@
       <div class="hero-stat"><div class="num" id="statAvailable">–</div><div class="label">On the shelf</div></div>
       <div class="hero-stat"><div class="num" id="statMine">–</div><div class="label">My listings</div></div>
       <div class="hero-stat"><div class="num" id="statIncoming">–</div><div class="label">Awaiting you</div></div>
+      <div class="hero-stat score"><div class="num" id="statScore">–</div><div class="label" id="statScoreLabel">Your score</div></div>
     </div>
   </div>
 </section>
@@ -943,6 +991,12 @@
       <div class="qa-title">Borrowed &amp; claimed</div>
       <div class="qa-desc">Books you've successfully picked up.</div>
       <span class="qa-count" id="countBorrowed">–</span>
+    </button>
+
+    <button class="qa-tile" data-tile="leaderboard">
+      <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M17 3H7v6a5 5 0 0010 0V3z"/><path d="M17 5h3a2 2 0 010 4h-1M7 5H4a2 2 0 000 4h1"/></svg></div>
+      <div class="qa-title">Leaderboard</div>
+      <div class="qa-desc">Top contributors on BookBridge, by score.</div>
     </button>
   </div>
 
@@ -998,6 +1052,32 @@
           </div>
         </li>
       </ol>
+    </div>
+  </div>
+
+  <!-- ── Score guide ────────────────────────────────────────── -->
+  <div class="score-wrap">
+    <div class="guidelines-eyebrow">BookBridge Score</div>
+    <div class="guidelines-heading">Earn points for helping the shelf</div>
+    <p class="guidelines-sub">Every action that helps another student earns points. Points build trust, unlock badges, and (soon) priority access to popular books.</p>
+
+    <div class="plaque">
+      <span class="plaque-bottom-pin-l"></span><span class="plaque-bottom-pin-r"></span>
+      <ul class="score-rule-grid" id="scoreRuleGrid">
+        <!-- populated from /api/scores/rules, with a static fallback below -->
+        <li class="score-rule-item"><span class="sr-label">Register account</span><span class="sr-points positive">+10</span></li>
+        <li class="score-rule-item"><span class="sr-label">Upload a book</span><span class="sr-points positive">+20</span></li>
+        <li class="score-rule-item"><span class="sr-label">Donate a book</span><span class="sr-points positive">+50</span></li>
+        <li class="score-rule-item"><span class="sr-label">Lend a book</span><span class="sr-points positive">+30</span></li>
+        <li class="score-rule-item"><span class="sr-label">Return book on time</span><span class="sr-points positive">+20</span></li>
+        <li class="score-rule-item"><span class="sr-label">Borrow a book</span><span class="sr-points positive">+5</span></li>
+        <li class="score-rule-item"><span class="sr-label">Give a book review</span><span class="sr-points positive">+10</span></li>
+        <li class="score-rule-item"><span class="sr-label">Verify book details</span><span class="sr-points positive">+5</span></li>
+        <li class="score-rule-item"><span class="sr-label">Invite a friend</span><span class="sr-points positive">+15</span></li>
+        <li class="score-rule-item"><span class="sr-label">Late return</span><span class="sr-points negative">-20</span></li>
+        <li class="score-rule-item"><span class="sr-label">Damaged book</span><span class="sr-points negative">-50</span></li>
+        <li class="score-rule-item"><span class="sr-label">Cancel request repeatedly</span><span class="sr-points negative">-10</span></li>
+      </ul>
     </div>
   </div>
 
@@ -1157,13 +1237,15 @@
   let activeTypeFilter = 'all';
   let books = [];
   let searchTimer = null;
+  let lastKnownScore = null; // used to toast point deltas after actions
 
   const TILE_COPY = {
-    browse:   { heading:"The shelf", sub:"Everything currently available across campus." },
-    mine:     { heading:"My listings", sub:"Books you've put up for lending, exchange, or donation." },
-    incoming: { heading:"Requests on my books", sub:"Respond to students waiting on your listings." },
-    outgoing: { heading:"My requests", sub:"Books you've asked to borrow, buy, or claim." },
-    borrowed: { heading:"Borrowed & claimed", sub:"Books you've successfully picked up." },
+    browse:      { heading:"The shelf", sub:"Everything currently available across campus." },
+    mine:        { heading:"My listings", sub:"Books you've put up for lending, exchange, or donation." },
+    incoming:    { heading:"Requests on my books", sub:"Respond to students waiting on your listings." },
+    outgoing:    { heading:"My requests", sub:"Books you've asked to borrow, buy, or claim." },
+    borrowed:    { heading:"Borrowed & claimed", sub:"Books you've successfully picked up." },
+    leaderboard: { heading:"Leaderboard", sub:"Top contributors on BookBridge, ranked by score." },
   };
 
   // ── Profile ───────────────────────────────────────────────
@@ -1181,6 +1263,13 @@
       document.getElementById('heroSub').textContent = subParts.length
         ? subParts.join(' · ')
         : "Here's what's happening on your shelf.";
+
+      const scoreHint = document.getElementById('scoreHint');
+      if(typeof user.score === 'number'){
+        scoreHint.textContent = user.badge ? `${user.score} pts · ${user.badge}` : `${user.score} pts`;
+        scoreHint.classList.add('has-score');
+        lastKnownScore = user.score;
+      }
 
       const avatarEl = document.getElementById('avatarEl');
       if(user.picture){
@@ -1223,10 +1312,43 @@
   function showToast(msg, isError){
     const t = document.getElementById('dashToast');
     t.textContent = msg;
+    t.className = 'toast' + (isError ? '' : '');
     t.style.background = isError ? 'var(--error)' : 'var(--wood-dark)';
     t.style.display = 'block';
     clearTimeout(t._hideTimer);
     t._hideTimer = setTimeout(() => t.style.display = 'none', 2600);
+  }
+
+  function showPointsToast(delta){
+    if(!delta) return;
+    const t = document.getElementById('dashToast');
+    t.textContent = delta > 0 ? `+${delta} points!` : `${delta} points`;
+    t.className = 'toast points';
+    t.style.background = delta > 0 ? '#8a5f16' : 'var(--error)';
+    t.style.display = 'block';
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(() => t.style.display = 'none', 2600);
+  }
+
+  // ── Score ────────────────────────────────────────────────
+  // Re-fetches the current score, updates the header/hero, and (if the
+  // score changed since we last checked) pops a small "+N points" toast.
+  // Call this after any action that might have earned/cost points.
+  async function refreshScore(announce){
+    try{
+      const res = await fetch('/api/scores/me');
+      if(!res.ok) return;
+      const data = await res.json();
+      document.getElementById('statScore').textContent = data.score;
+      const scoreHint = document.getElementById('scoreHint');
+      scoreHint.textContent = data.badge ? `${data.score} pts · ${data.badge}` : `${data.score} pts`;
+      scoreHint.classList.add('has-score');
+
+      if(announce && lastKnownScore !== null && data.score !== lastKnownScore){
+        showPointsToast(data.score - lastKnownScore);
+      }
+      lastKnownScore = data.score;
+    }catch(e){ /* leave last-known score displayed */ }
   }
 
   // ── Stat + tile counts ──────────────────────────────────
@@ -1259,6 +1381,39 @@
       badge.textContent = incoming.length;
       badge.classList.toggle('visible', incoming.length > 0);
     }catch(e){ /* leave dashes if backend isn't reachable yet */ }
+
+    refreshScore(false);
+  }
+
+  // ── Score rules plaque (pulls live values, falls back to the
+  //    hardcoded HTML already in the page if the endpoint isn't reachable) ──
+  async function loadScoreRules(){
+    const RULE_LABELS = {
+      register: "Register account",
+      upload_book: "Upload a book",
+      donate_book: "Donate a book",
+      lend_book: "Lend a book",
+      return_on_time: "Return book on time",
+      borrow_book: "Borrow a book",
+      give_review: "Give a book review",
+      verify_book_details: "Verify book details",
+      invite_friend: "Invite a friend",
+      late_return: "Late return",
+      damaged_book: "Damaged book",
+      cancel_request: "Cancel request repeatedly",
+    };
+    try{
+      const res = await fetch('/api/scores/rules');
+      if(!res.ok) return;
+      const rules = await res.json();
+      const grid = document.getElementById('scoreRuleGrid');
+      grid.innerHTML = Object.entries(rules).map(([key, points]) => `
+        <li class="score-rule-item">
+          <span class="sr-label">${RULE_LABELS[key] || key}</span>
+          <span class="sr-points ${points >= 0 ? 'positive' : 'negative'}">${points >= 0 ? '+' : ''}${points}</span>
+        </li>
+      `).join('');
+    }catch(e){ /* static fallback already in the HTML stays as-is */ }
   }
 
   // ── My Cart / activity drawer ────────────────────────────
@@ -1283,6 +1438,7 @@
     incoming: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>',
     accepted: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
     rejected: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+    score:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M17 3H7v6a5 5 0 0010 0V3z"/><path d="M17 5h3a2 2 0 010 4h-1M7 5H4a2 2 0 000 4h1"/></svg>',
   };
 
   function timeAgo(iso){
@@ -1301,14 +1457,16 @@
   async function loadMyActivity(){
     cartActivityList.innerHTML = '<div class="cart-empty">Loading your activity…</div>';
     try{
-      const [mineRes, outRes, inRes] = await Promise.all([
+      const [mineRes, outRes, inRes, scoreRes] = await Promise.all([
         fetch('/api/books?scope=mine'),
         fetch('/api/requests/outgoing'),
         fetch('/api/requests/incoming'),
+        fetch('/api/scores/me'),
       ]);
       const mine = mineRes.ok ? await mineRes.json() : [];
       const outgoing = outRes.ok ? await outRes.json() : [];
       const incoming = inRes.ok ? await inRes.json() : [];
+      const scoreData = scoreRes.ok ? await scoreRes.json() : null;
 
       const items = [];
 
@@ -1337,6 +1495,14 @@
             ? `You accepted ${r.requester_name}'s request for <strong>${r.book_title}</strong>`
             : `You declined ${r.requester_name}'s request for <strong>${r.book_title}</strong>`,
       }));
+
+      if(scoreData && Array.isArray(scoreData.history)){
+        scoreData.history.forEach(ev => items.push({
+          type: 'score',
+          date: ev.created_at,
+          html: `${ev.points >= 0 ? '+' : ''}${ev.points} pts — ${(ev.note || ev.action || '').toString()}`,
+        }));
+      }
 
       items.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
@@ -1512,19 +1678,37 @@
 
   document.getElementById('requestsPanel').addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-req-action]');
-    if(!btn) return;
-    const action = btn.dataset.reqAction;
-    const reqId = btn.dataset.reqId;
-    btn.disabled = true;
-    try{
-      const res = await fetch(`/api/requests/${reqId}/${action}`, { method:'POST' });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok){ showToast(data.error || 'Could not update this request.', true); btn.disabled = false; return; }
-      showToast(action === 'accept' ? "Request accepted — arrange handoff on campus." : 'Request rejected.');
-      loadIncomingRequests(); refreshCounts();
-    }catch(err){
-      showToast('Network error — try again.', true);
-      btn.disabled = false;
+    if(btn){
+      const action = btn.dataset.reqAction;
+      const reqId = btn.dataset.reqId;
+      btn.disabled = true;
+      try{
+        const res = await fetch(`/api/requests/${reqId}/${action}`, { method:'POST' });
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok){ showToast(data.error || 'Could not update this request.', true); btn.disabled = false; return; }
+        showToast(action === 'accept' ? "Request accepted — arrange handoff on campus." : 'Request rejected.');
+        loadIncomingRequests(); refreshCounts(); refreshScore(true);
+      }catch(err){
+        showToast('Network error — try again.', true);
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    const cancelBtn = e.target.closest('[data-cancel-id]');
+    if(cancelBtn){
+      const reqId = cancelBtn.dataset.cancelId;
+      cancelBtn.disabled = true;
+      try{
+        const res = await fetch(`/api/requests/${reqId}/cancel`, { method:'POST' });
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok){ showToast(data.error || 'Could not cancel this request.', true); cancelBtn.disabled = false; return; }
+        showToast('Request cancelled.');
+        loadOutgoing(); refreshCounts(); refreshScore(true);
+      }catch(err){
+        showToast('Network error — try again.', true);
+        cancelBtn.disabled = false;
+      }
     }
   });
 
@@ -1542,11 +1726,14 @@
         panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>No requests sent yet</h3><p>Browse the shelf and request a book you need.</p></div>`;
         return;
       }
-      const statusLabel = { pending:'Waiting on owner', accepted:'Accepted', rejected:'Declined' };
+      const statusLabel = { pending:'Waiting on owner', accepted:'Accepted', rejected:'Declined', cancelled:'Cancelled' };
       panel.innerHTML = reqs.map(r => `
         <div class="request-row">
           <div style="font-size:13.5px;"><strong>${r.book_title}</strong> (${r.book_listing_type})</div>
-          <span class="book-tag">${statusLabel[r.status] || r.status}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="book-tag">${statusLabel[r.status] || r.status}</span>
+            ${r.status === 'pending' ? `<button class="btn-secondary" style="padding:5px 12px; font-size:12px;" data-cancel-id="${r.id}">Cancel</button>` : ''}
+          </div>
         </div>
       `).join('');
     }catch(e){
@@ -1579,6 +1766,38 @@
     }
   }
 
+  // ── Leaderboard ───────────────────────────────────────────
+  async function loadLeaderboard(){
+    const panel = document.getElementById('requestsPanel');
+    document.getElementById('cardGrid').style.display = 'none';
+    document.getElementById('emptyDrawer').style.display = 'none';
+    panel.style.display = 'block';
+    panel.innerHTML = 'Loading…';
+    try{
+      const res = await fetch('/api/scores/leaderboard');
+      if(!res.ok) throw new Error();
+      const rows = await res.json();
+      if(!rows.length){
+        panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>No scores yet</h3><p>Be the first to earn points.</p></div>`;
+        return;
+      }
+      panel.innerHTML = rows.map((s, i) => `
+        <div class="request-row">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span class="call-number">#${i+1}</span>
+            <strong>${s.display_name}</strong>
+            ${s.verified ? '<span title="Verified student" style="color:var(--moss); font-weight:700;">&#10003;</span>' : ''}
+            ${s.badge ? `<span class="book-tag">${s.badge}</span>` : ''}
+            ${currentUser && s.id === currentUser.id ? `<span class="book-tag" style="border-color:var(--brass); color:var(--brass);">You</span>` : ''}
+          </div>
+          <span class="book-tag">${s.score} pts</span>
+        </div>
+      `).join('');
+    }catch(e){
+      panel.innerHTML = `<div class="empty-drawer"><div class="drawer-icon"></div><h3>Couldn't load the leaderboard</h3><p>Try refreshing the page.</p></div>`;
+    }
+  }
+
   // ── Tile switching ───────────────────────────────────────
   document.getElementById('quickActions').addEventListener('click', (e) => {
     const tile = e.target.closest('.qa-tile');
@@ -1608,6 +1827,8 @@
       loadOutgoing();
     } else if(target === 'borrowed'){
       loadBorrowed();
+    } else if(target === 'leaderboard'){
+      loadLeaderboard();
     }
   });
 
@@ -1724,8 +1945,11 @@
         return;
       }
       closeModal();
-      showToast('Added to the shelf!');
+      showToast(selectedType === 'donate'
+        ? 'Added to the shelf! Donations earn points once an admin approves them.'
+        : 'Added to the shelf!');
       refreshCounts();
+      refreshScore(true);
       if(activeTile === 'browse' || activeTile === 'mine') fetchBooks();
     }catch(err){
       formError.textContent = 'Could not reach the server. Please try again.';
@@ -1741,6 +1965,7 @@
     await loadProfile();
     refreshCounts();
     fetchBooks();
+    loadScoreRules();
   })();
 </script>
 </body>
